@@ -1,20 +1,26 @@
-
-
-function main() {
-    // Inicializa gl
+// Inicializa gl, viewport e clearColor. Retorna gl
+function init_gl()
+{
     const canvas = document.querySelector("#canvas");
     const gl = canvas.getContext("webgl2");
     if (!gl) {
-        alert("No WebGL2 support");
+        alert("Sem suporte a WebGL 2.0");
         return;
     }
 
-    // Compila programa a partir do código dos vertex e fragment shaders
-    const program = initShaders(gl, "vs", "fs");
-
-    // Outras inicializações do viewport
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(0, 0, 0, 0);
+
+    return gl;
+}
+
+function main()
+{
+    const gl = init_gl();
+    if (!gl) return;
+
+    // Compila programa a partir do código dos vertex e fragment shaders
+    const program = initShaders(gl, "vs", "fs");
 
     // QUAIS SÃO OS ATRIBUTOS?
     const a_position = gl.getAttribLocation(program, "a_position");
