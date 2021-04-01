@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL2 Fundamentals</title>
+    <style>
+        #canvas {
+            /* width: 200px; */
+            /* height: 200px; */
+            border: 1px solid lightgray;
+        }
+    </style>
+</head>
+<body>
+    <script id="vs" type="x-shader/x-vertex"># version 300 es
+        in vec4 a_position;
+        uniform float u_pointsize;
+
+        void main()
+        {
+            gl_Position = a_position;
+            gl_PointSize = u_pointsize;
+        }
+    </script>
+
+    <script id="fs" type="x-shader/x-fragment">#version 300 es
+        precision highp float;
+        out vec4 outColor;
+        void main()
+        {
+            outColor = vec4(1, 0, 0, 1);
+        }
+    </script>
+    <canvas id="canvas" width="300" height="300"></canvas>
+    <script src="initShaders.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
