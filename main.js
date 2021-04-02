@@ -1,15 +1,10 @@
-/** Representa um ponto no espaço 2D */
-class Point {
-    constructor(x, y) {
-        console.assert(typeof(x) == "number", "x precisa ser um número");
-        console.assert(typeof(y) == "number", "y precisa ser um número");
-
-        this.x = x;
-        this.y = y;
-    }
-
+/**
+ * Class base com funcionalidades relacionadas a inicialização WebGL.
+ * As outras classes de objetos desenháveis devem herdar de BaseWebGLObject.
+ */
+class BaseWebGLObject {
     /**
-     * Define o contexto gl para que o ponto consiga interagir: acessar atributos,
+     * Define o contexto gl para que o objeto consiga interagir: acessar atributos,
      * uniforms, criar buffers, se desenhar no canvas, etc.
      */
     set_gl(gl) {
@@ -18,7 +13,7 @@ class Point {
     }
 
     /**
-     * Define qual programa o ponto usa para ser renderizado. Também necessário para
+     * Define qual programa o objeto usa para ser renderizado. Também necessário para
      * acessar os atributos, uniforms, etc.
      */
     set_program(program) {
@@ -26,53 +21,57 @@ class Point {
         this.program = program;
     }
 
-    /** Localiza os atributos necessários nos shaders */
-    get_atributos() {
-        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
-    }
-
-    /** Localiza os uniforms necessários nos shaders */
-    get_uniforms() {
-        this.u_pointsize = this.gl.getUniformLocation(this.program, "u_pointsize");
-        this.u_color = this.gl.getUniformLocation(this.program, "u_color");
-    }
-
     /**
-     * Define os uniforms para este ponto. Este método deve ser chamado dentro do método
-     * .draw() usando o parâmetro f_extra.
+     * Localiza os atributos necessários nos shaders.
+     * Exemplo: this.a_pos = this.gl.getAttribLocation(this.program, "a_pos");
+     * Este método deve ser sobrescrito nas subclasses.
      */
-    set_uniforms(pointsize, color) {
-        this.gl.uniform1f(this.u_pointsize, pointsize);
-        this.gl.uniform4fv(this.u_color, new Float32Array(color));
-    }
+    get_atributos() {}
 
-    /** Cria um buffer e carrega as coordenadas do ponto nele */
+    /**
+     * Localiza os uniforms necessários nos shaders.
+     * Exemplo: this.u_color = this.gl.getUniformLocation(this.program, "u_color");
+     * Este método deve ser sobrescrito nas subclasses.
+     */
+    get_uniforms() {}
+
+    /**
+     * Define os uniforms para este objeto. Este método deve ser chamado dentro do
+     * método draw() utilizando o parâmetro f_extra.
+     * Exemplo: this.gl.uniform4fv(this.u_color, new Float32Array(...));
+     * Este método deve ser sobrescrito nas subclasses.
+     */
+    set_uniforms() {}
+
+    /**
+     * Cria um buffer para conter as coordenadas do objeto.
+     * Este método deve ser sobrescrito nas subclasses e deve chamar super.init_buffer()
+     */
     init_buffer() {
-        this.buf = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buf);
+        const buf = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buf);
 
-        const vec2 = new Float32Array([this.x, this.y]);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, vec2, this.gl.STATIC_DRAW);
+        /* Chamar this.gl.bufferData(...) na subclasse */
     }
 
     /**
-     * Cria um VAO para o ponto e configura método de extração dos dados do buffer para
-     * cada atributo necessário.
+     * Cria um VAO para o objeto.
+     * Este método deve ser sobrescrito nas subclasses e deve chamar super.init_vao()
      */
     init_vao() {
-        console.assert(this.a_position != null, "atributo a_position não foi setado");
-
         // Cria Vertex Array Object e binda ele
         this.vao = this.gl.createVertexArray();
         this.gl.bindVertexArray(this.vao);
 
-        // Ativa cada atributo e "explica pro WebGL" como extrair informação do buffer
-        this.gl.enableVertexAttribArray(this.a_position);
-        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
+        /**
+         * Na subclasse, ativa cada atributo e "explica pro WebGL" como extrair
+         * informação do buffer. Ou seja: chamar gl.enableVertexAttribArray(...) e
+         * gl.vertexAttribPointer(...) para cada atributo.
+         */
     }
 
     /**
-     * Inicializa o ponto. Roda todas fases de inicialização necessárias. Este método
+     * Inicializa o objeto. Roda todas fases de inicialização necessárias. Este método
      * não deve ser rodado dentro do loop de renderização, mas sim na fase de iniciali-
      * zação da aplicação.
      */
@@ -86,22 +85,76 @@ class Point {
     }
 
     /**
-     * Desenha o ponto no canvas que contém o contexto gl configurado.
+     * Desenha o objeto no canvas que contém o contexto gl configurado.
      * Configurações adicionar a serem feitas antes de desenhar mas depois da chamada
-     * à gl.useProgram() também devem ser feitas aqui.
+     * à gl.useProgram() também devem ser feitas aqui usando a função f_extra.
+     * Este método deve ser sobrescrito nas subclasses para definir os parâmetros da
+     * chamada ao gl.drawArrays().
      */
     draw(f_extra) {
         console.assert(typeof(f_extra) == "function");
         this.gl.useProgram(this.program);
         f_extra();
         this.gl.bindVertexArray(this.vao);
+
+        /* Chamar gl.drawArrays(...) na subclasse com parâmetros corretos */
+    }
+
+
+}
+
+/** Representa um ponto no espaço 2D */
+class Point extends BaseWebGLObject {
+    constructor(x, y) {
+        super();
+
+        console.assert(typeof(x) == "number", "x precisa ser um número");
+        console.assert(typeof(y) == "number", "y precisa ser um número");
+
+        this.x = x;
+        this.y = y;
+    }
+
+    get_atributos() {
+        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
+    }
+
+    get_uniforms() {
+        this.u_pointsize = this.gl.getUniformLocation(this.program, "u_pointsize");
+        this.u_color = this.gl.getUniformLocation(this.program, "u_color");
+    }
+
+    set_uniforms(pointsize, color) {
+        this.gl.uniform1f(this.u_pointsize, pointsize);
+        this.gl.uniform4fv(this.u_color, new Float32Array(color));
+    }
+
+    init_buffer() {
+        super.init_buffer()
+        const vec2 = new Float32Array([this.x, this.y]);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, vec2, this.gl.STATIC_DRAW);
+    }
+
+    init_vao() {
+        super.init_vao();
+
+        // Como extrair valores do buffer de a_position
+        console.assert(this.a_position != null, "atributo a_position não foi setado");
+        this.gl.enableVertexAttribArray(this.a_position);
+        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
+    }
+
+    draw(f_extra) {
+        super.draw(f_extra);
         this.gl.drawArrays(this.gl.POINTS, 0, 1);
     }
 }
 
 /** Representa um segmento de reta no espaço 2D */
-class Line {
+class Line extends BaseWebGLObject {
     constructor(x1, y1, x2, y2) {
+        super();
+
         console.assert(typeof(x1) == "number", "x1 precisa ser um número");
         console.assert(typeof(y1) == "number", "y1 precisa ser um número");
         console.assert(typeof(x2) == "number", "x2 precisa ser um número");
@@ -113,92 +166,37 @@ class Line {
         this.y2 = y2;
     }
 
-    /**
-     * Define o contexto gl para que o ponto consiga interagir: acessar atributos,
-     * uniforms, criar buffers, se desenhar no canvas, etc.
-     */
-    set_gl(gl) {
-        console.assert(gl instanceof WebGL2RenderingContext, "objeto gl incorreto");
-        this.gl = gl;
-    }
-
-    /**
-     * Define qual programa a reta usa para ser renderizada. Também necessário para
-     * acessar os atributos, uniforms, etc.
-     */
-    set_program(program) {
-        console.assert(program instanceof WebGLProgram, "objeto program incorreto");
-        this.program = program;
-    }
-
-    /** Localiza os atributos necessários nos shaders */
     get_atributos() {
         this.a_position = this.gl.getAttribLocation(this.program, "a_position");
     }
 
-    /** Localiza os uniforms necessários nos shaders */
     get_uniforms() {
         this.u_color = this.gl.getUniformLocation(this.program, "u_color");
     }
 
-    /**
-     * Define os uniforms para este segmento de reta. Este método deve ser chamado
-     * dentro do método .draw() usando o parâmetro f_extra.
-     */
     set_uniforms(color) {
         this.gl.uniform4fv(this.u_color, new Float32Array(color));
     }
 
-    /** Cria um buffer e carrega as coordenadas do segmento de reta dela */
     init_buffer() {
-        this.buf = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buf);
+        super.init_buffer();
 
         const coords = [this.x1, this.y1, this.x2, this.y2];
         const vec2 = new Float32Array(coords);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, vec2, this.gl.STATIC_DRAW);
     }
 
-    /**
-     * Cria um VAO para o ponto e configura método de extração dos dados do buffer para
-     * cada atributo necessário.
-     */
     init_vao() {
+        super.init_vao();
+
+        // Como extrair valores do buffer de a_position
         console.assert(this.a_position != null, "atributo a_position não foi setado");
-
-        // Cria Vertex Array Object e binda ele
-        this.vao = this.gl.createVertexArray();
-        this.gl.bindVertexArray(this.vao);
-
-        // Ativa cada atributo e "explica pro WebGL" como extrair informação do buffer
         this.gl.enableVertexAttribArray(this.a_position);
         this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
     }
 
-    /**
-     * Inicializa o segmento de reta. Roda todas fases de inicialização necessárias.
-     * Este método não deve ser rodado dentro do loop de renderização, mas sim na fase
-     * de inicialização da aplicação.
-     */
-    init(gl, program) {
-        this.set_gl(gl);
-        this.set_program(program);
-        this.get_atributos();
-        this.get_uniforms();
-        this.init_buffer();
-        this.init_vao();
-    }
-
-    /**
-     * Desenha o segmento de reta no canvas que contém o contexto gl configurado.
-     * Configurações adicionar a serem feitas antes de desenhar mas depois da chamada
-     * à gl.useProgram() também devem ser feitas aqui.
-     */
     draw(f_extra) {
-        console.assert(typeof(f_extra) == "function");
-        this.gl.useProgram(this.program);
-        f_extra();
-        this.gl.bindVertexArray(this.vao);
+        super.draw(f_extra);
         this.gl.drawArrays(this.gl.LINES, 0, 2);
     }
 }
