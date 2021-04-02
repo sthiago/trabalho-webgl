@@ -53,6 +53,8 @@ class BaseWebGLObject {
      */
     set_uniforms() {}
 
+
+
     /**
      * Cria um buffer para conter as coordenadas do objeto.
      * Este método deve ser sobrescrito nas subclasses e deve chamar super.init_buffer()
@@ -214,7 +216,8 @@ class Line extends BaseWebGLObject {
 
 
 /**
- * Inicializa gl, viewport e clearColor.
+ * Inicializa gl, viewport e clearColor e configura os handlers de interação com o
+ * mouse e com o teclado.
  * Retorna o contexto gl.
  */
 function init_gl()
@@ -227,10 +230,27 @@ function init_gl()
     }
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.clearColor(0, 0, 0, 0);
+    gl.clearColor(1, 1, 1, 1);
+
+    canvas.onmousemove = mousemove_handler;
 
     return gl;
 }
+
+/* Função que lida com movimentos do mouse */
+function mousemove_handler(e)
+{
+    const canvas = document.querySelector("#canvas");
+    const rect = canvas.getBoundingClientRect();
+    const mouse_position_el = document.querySelector("#mouse_position");
+
+    // O -1 é da borda de 1px
+    const mouseX = e.clientX - rect.left - 1;
+    const mouseY = e.clientY - rect.top - 1;
+
+    mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
+}
+
 
 /** Função utilitária para gerar um número (float) entre min e max */
 function randrange(min, max) {
@@ -294,8 +314,7 @@ function draw_loop(gl, program) {
         });
     }
 
-    window.requestAnimationFrame(() => draw_loop(gl, program));
+    // window.requestAnimationFrame(() => draw_loop(gl, program));
 }
 
 window.onload = main;
-// window.onload = test();

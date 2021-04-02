@@ -6,10 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebGL2 Fundamentals</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color:ghostwhite;
+        }
+
         #canvas {
-            /* width: 200px; */
-            /* height: 200px; */
+            float: left;
+            margin: 10px;;
+            padding: 0;
             border: 1px solid lightgray;
+        }
+
+        #mouse_position {
+            float: left;
+            padding: 10px;
         }
     </style>
 </head>
@@ -44,7 +60,10 @@
             outColor = u_color;
         }
     </script>
+
     <canvas id="canvas" width="300" height="300"></canvas>
+    <div id="mouse_position"></div>
+
     <script src="initShaders.js"></script>
     <script src="main.js"></script>
 </body>
