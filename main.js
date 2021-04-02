@@ -38,8 +38,8 @@ class Point {
     }
 
     /**
-     * Define os uniforms para este ponto. Este método deve ser chamado antes de chamar
-     * o método .draw().
+     * Define os uniforms para este ponto. Este método deve ser chamado dentro do método
+     * .draw() usando o parâmetro f_extra.
      */
     set_uniforms(pointsize, color) {
         this.gl.uniform1f(this.u_pointsize, pointsize);
@@ -87,9 +87,13 @@ class Point {
 
     /**
      * Desenha o ponto no canvas que contém o contexto gl configurado.
+     * Configurações adicionar a serem feitas antes de desenhar mas depois da chamada
+     * à gl.useProgram() também devem ser feitas aqui.
      */
-    draw() {
+    draw(f_extra) {
+        console.assert(typeof(f_extra) == "function");
         this.gl.useProgram(this.program);
+        f_extra();
         this.gl.bindVertexArray(this.vao);
         this.gl.drawArrays(this.gl.POINTS, 0, 1);
     }
@@ -140,10 +144,11 @@ function main()
     // Desenha todos os pontos em points
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     for (const p of points) {
-        const pointsize = 1.5;
-        const random_color = [Math.random(), Math.random(), Math.random(), 1];
-        p.set_uniforms(1.5, random_color);
-        p.draw();
+        p.draw(() => {
+            const pointsize = 10;
+            const random_color = [Math.random(), Math.random(), Math.random(), 1];
+            p.set_uniforms(pointsize, random_color);
+        });
     }
 }
 
