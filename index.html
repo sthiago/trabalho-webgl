@@ -16,21 +16,21 @@
 <body>
     <script id="vs" type="x-shader/x-vertex"># version 300 es
         in vec4 a_position;
-        //uniform float u_pointsize;
-
+        uniform float u_pointsize;
         void main()
         {
             gl_Position = a_position;
-            //gl_PointSize = u_pointsize;
+            gl_PointSize = u_pointsize;
         }
     </script>
 
     <script id="fs" type="x-shader/x-fragment">#version 300 es
         precision highp float;
+        uniform vec4 u_color;
         out vec4 outColor;
         void main()
         {
-            outColor = vec4(1, 0, 0, 1);
+            outColor = u_color;
         }
     </script>
     <canvas id="canvas" width="300" height="300"></canvas>

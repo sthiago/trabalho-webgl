@@ -7,10 +7,6 @@ class Point {
         this.y = y;
     }
 
-    toString() {
-        return `Point(${this.x}, ${this.y})`;
-    }
-
     set_gl(gl) {
         console.assert(gl instanceof WebGL2RenderingContext, "objeto gl incorreto");
         this.gl = gl;
@@ -21,8 +17,18 @@ class Point {
         this.program = program;
     }
 
-    set_atributos() {
+    get_atributos() {
         this.a_position = this.gl.getAttribLocation(this.program, "a_position");
+    }
+
+    get_uniforms() {
+        this.u_pointsize = this.gl.getUniformLocation(this.program, "u_pointsize");
+        this.u_color = this.gl.getUniformLocation(this.program, "u_color");
+    }
+
+    set_uniforms(pointsize, color) {
+        this.gl.uniform1f(this.u_pointsize, pointsize);
+        this.gl.uniform4fv(this.u_color, new Float32Array(color));
     }
 
     init_buffer() {
@@ -48,14 +54,14 @@ class Point {
     init(gl, program) {
         this.set_gl(gl);
         this.set_program(program);
-        this.set_atributos();
+        this.get_atributos();
+        this.get_uniforms();
         this.init_buffer();
         this.init_vao();
     }
 
     draw() {
         this.gl.useProgram(this.program);
-        // gl.uniform1f(u_pointsize, 5.0);
         this.gl.bindVertexArray(this.vao);
         this.gl.drawArrays(this.gl.POINTS, 0, 1);
     }
@@ -77,6 +83,10 @@ function init_gl()
     return gl;
 }
 
+function randrange(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
 function main()
 {
     const gl = init_gl();
@@ -87,8 +97,8 @@ function main()
 
     // Cria 500 pontos aleatórios no primeiro quadrante
     const points = [];
-    for (const _ of Array(500)) {
-        const p = new Point(Math.random(), Math.random());
+    for (const _ of Array(5000)) {
+        const p = new Point(randrange(-1, 1), randrange(-1, 1));
         p.init(gl, program);
         points.push(p);
     }
@@ -96,6 +106,9 @@ function main()
     // Desenha os os pontos em points
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     for (const p of points) {
+        const pointsize = 1.5;
+        const random_color = [Math.random(), Math.random(), Math.random(), 1];
+        p.set_uniforms(1.5, random_color);
         p.draw();
     }
 }
