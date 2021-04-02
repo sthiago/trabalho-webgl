@@ -22,6 +22,16 @@ class BaseWebGLObject {
     }
 
     /**
+     * Configura o uniform de resolução para que o shader consiga converter as coorde-
+     * nadas do intervalo [-1, 1] para [0, width] e [0, height]
+     */
+    set_resolution()
+    {
+        const u_resolution = this.gl.getUniformLocation(this.program, "u_resolution");
+        this.gl.uniform2f(u_resolution, this.gl.canvas.width, this.gl.canvas.height);
+    }
+
+    /**
      * Localiza os atributos necessários nos shaders.
      * Exemplo: this.a_pos = this.gl.getAttribLocation(this.program, "a_pos");
      * Este método deve ser sobrescrito nas subclasses.
@@ -94,6 +104,7 @@ class BaseWebGLObject {
     draw(f_extra) {
         console.assert(typeof(f_extra) == "function");
         this.gl.useProgram(this.program);
+        this.set_resolution();
         f_extra();
         this.gl.bindVertexArray(this.vao);
 
@@ -236,19 +247,29 @@ function main()
     // Compila programa a partir do código dos vertex e fragment shaders
     const program = initShaders(gl, "vs", "fs");
 
+    window.requestAnimationFrame(() => draw_loop(gl, program));
+}
+
+function draw_loop(gl, program) {
     // Cria pontos aleatórios
     const points = [];
-    for (const _ of Array(50)) {
-        const p = new Point(randrange(-1, 1), randrange(-1, 1));
+    for (const _ of Array(200)) {
+        const p = new Point(
+            randrange(150, gl.canvas.width),
+            randrange(150, gl.canvas.height)
+        );
         p.init(gl, program);
         points.push(p);
     }
 
     // Cria retas aleatórias
     const lines = [];
-    for (const _ of Array(10)) {
+    for (const _ of Array(50)) {
         const l = new Line(
-            randrange(-1, 1), randrange(-1, 1), randrange(-1, 1), randrange(-1, 1)
+            randrange(0, gl.canvas.height/2),
+            randrange(0, gl.canvas.height/2),
+            randrange(0, gl.canvas.height/2),
+            randrange(0, gl.canvas.height/2)
         );
         l.init(gl, program);
         lines.push(l);
@@ -273,9 +294,8 @@ function main()
         });
     }
 
+    window.requestAnimationFrame(() => draw_loop(gl, program));
 }
 
-function test() {};
-
-window.onload = main();
+window.onload = main;
 // window.onload = test();

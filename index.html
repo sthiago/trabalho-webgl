@@ -15,11 +15,22 @@
 </head>
 <body>
     <script id="vs" type="x-shader/x-vertex"># version 300 es
-        in vec4 a_position;
+        in vec2 a_position;
+
         uniform float u_pointsize;
+        uniform vec2 u_resolution;
+
         void main()
         {
-            gl_Position = a_position;
+            // Dada uma posição a_position no intervalo [0, w] e [0, h], converte ela
+            // para o intervalo [-1, 1], que o WebGL espera
+            vec2 clipspace_coords = (2.0 * (a_position / u_resolution)) - 1.0;
+
+            // Flipa as coordenadas para que a origem (0, 0) fique no canto superior
+            // esquerdo
+            vec2 flipped_coords = vec2(clipspace_coords.x, -clipspace_coords.y);
+
+            gl_Position = vec4(flipped_coords, 0, 1);
             gl_PointSize = u_pointsize;
         }
     </script>
