@@ -23,7 +23,7 @@
             border: 1px solid lightgray;
         }
 
-        #mouse_position {
+        #info {
             float: left;
             padding: 10px;
         }
@@ -53,16 +53,21 @@
 
     <script id="fs" type="x-shader/x-fragment">#version 300 es
         precision highp float;
-        uniform vec4 u_color;
+        // uniform vec4 u_color;
         out vec4 outColor;
         void main()
         {
-            outColor = u_color;
+            // outColor = u_color;
+            outColor = vec4(0, 0.5, 1, 1);
         }
     </script>
 
     <canvas id="canvas" width="300" height="300"></canvas>
-    <div id="mouse_position"></div>
+    <div id="info">
+        <div id="mouse_position"></div>
+        <div id="frame_time"></div>
+        <div id="fps"></div>
+    </div>
 
     <script src="initShaders.js"></script>
     <script src="main.js"></script>

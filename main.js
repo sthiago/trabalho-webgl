@@ -1,123 +1,143 @@
 /**
- * Class base com funcionalidades relacionadas a inicialização WebGL.
- * As outras classes de objetos desenháveis devem herdar de BaseWebGLObject.
+ * Classe Base com funcionalidades relacionadas a inicialização WebGL.
+ * Cada primitiva desenhável deve ser uma classe que herda de Base.
  */
-class BaseWebGLObject {
+class Base {
     /**
-     * Define o contexto gl para que o objeto consiga interagir: acessar atributos,
-     * uniforms, criar buffers, se desenhar no canvas, etc.
+     * Lista que contém todos os objetos dessa classe. Guardando eles numa lista, eu
+     * posso fazer apenas uma chamada a gl.drawArrays() para todos da mesma primitiva,
+     * em vez de ter que fazer uma chamada para cada objeto.
      */
-    set_gl(gl) {
+    static list = [];
+
+    /**
+     * Define o contexto gl para que a classe consiga fazer chamadas à WebGL: acessar
+     * atributos, uniforms, criar buffers, desenhar no canvas, etc.
+     */
+    static set_gl(gl) {
         console.assert(gl instanceof WebGL2RenderingContext, "objeto gl incorreto");
         this.gl = gl;
     }
 
     /**
-     * Define qual programa o objeto usa para ser renderizado. Também necessário para
-     * acessar os atributos, uniforms, etc.
+     * Define qual programa a classe usa para renderizar seus objetos. Também necessário
+     * para algumas chamadas WebGL. Cada classe pode usar um programa diferente, apesar
+     * de não ser o caso nessa aplicação.
      */
-    set_program(program) {
+    static set_program(program) {
         console.assert(program instanceof WebGLProgram, "objeto program incorreto");
         this.program = program;
     }
 
     /**
-     * Configura o uniform de resolução para que o shader consiga converter as coorde-
-     * nadas do intervalo [-1, 1] para [0, width] e [0, height]
+     * Localiza os atributos/uniforms necessários nos shaders.
+     * Exemplo: cls.a_pos = cls.gl.getAttribLocation(cls.program, "a_pos");
+     * Exemplo: cls.u_res = cls.gl.getUniformLocation(cls.program, "u_res");
+     * Cada subclasse deve implementar esses método localizando as variáveis que usa.
      */
-    set_resolution()
-    {
-        const u_resolution = this.gl.getUniformLocation(this.program, "u_resolution");
-        this.gl.uniform2f(u_resolution, this.gl.canvas.width, this.gl.canvas.height);
-    }
+    static get_atributos() {}
+    static get_uniforms() {}
 
     /**
-     * Localiza os atributos necessários nos shaders.
-     * Exemplo: this.a_pos = this.gl.getAttribLocation(this.program, "a_pos");
+     * Define os uniforms para esta classe. Esses valores são globais para todos os
+     * objetos instanciados. Se algum uniform precisar ser setado com valores diferentes
+     * a cada chamada de desenho, devem ser setados no param. f_extra do método .draw()
+     * Exemplo: cls.gl.uniform4fv(cls.u_color, new Float32Array(...));
      * Este método deve ser sobrescrito nas subclasses.
      */
-    get_atributos() {}
+    static set_uniforms() {}
 
     /**
-     * Localiza os uniforms necessários nos shaders.
-     * Exemplo: this.u_color = this.gl.getUniformLocation(this.program, "u_color");
+     * Cria Vertex Array Object (VAO) para a classe. As subclasses devem também criar e
+     * inicializar os buffers de cada atributo que utilizam.
      * Este método deve ser sobrescrito nas subclasses.
      */
-    get_uniforms() {}
-
-    /**
-     * Define os uniforms para este objeto. Este método deve ser chamado dentro do
-     * método draw() utilizando o parâmetro f_extra.
-     * Exemplo: this.gl.uniform4fv(this.u_color, new Float32Array(...));
-     * Este método deve ser sobrescrito nas subclasses.
-     */
-    set_uniforms() {}
-
-
-
-    /**
-     * Cria um buffer para conter as coordenadas do objeto.
-     * Este método deve ser sobrescrito nas subclasses e deve chamar super.init_buffer()
-     */
-    init_buffer() {
-        const buf = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buf);
-
-        /* Chamar this.gl.bufferData(...) na subclasse */
-    }
-
-    /**
-     * Cria um VAO para o objeto.
-     * Este método deve ser sobrescrito nas subclasses e deve chamar super.init_vao()
-     */
-    init_vao() {
-        // Cria Vertex Array Object e binda ele
+    static init_vao_e_buffers() {
         this.vao = this.gl.createVertexArray();
         this.gl.bindVertexArray(this.vao);
 
-        /**
-         * Na subclasse, ativa cada atributo e "explica pro WebGL" como extrair
-         * informação do buffer. Ou seja: chamar gl.enableVertexAttribArray(...) e
-         * gl.vertexAttribPointer(...) para cada atributo.
-         */
+        /* createBuffer, bindBuffer, enableVAO, etc. pra cada atributo */
     }
 
     /**
-     * Inicializa o objeto. Roda todas fases de inicialização necessárias. Este método
-     * não deve ser rodado dentro do loop de renderização, mas sim na fase de iniciali-
-     * zação da aplicação.
+     * Inicializa a classe. Toda subclasse deve chamar este método durante a fase de
+     * inicialização da aplicação.
      */
-    init(gl, program) {
+    static init(gl, program) {
         this.set_gl(gl);
         this.set_program(program);
         this.get_atributos();
         this.get_uniforms();
-        this.init_buffer();
-        this.init_vao();
+        this.init_vao_e_buffers();
     }
 
     /**
-     * Desenha o objeto no canvas que contém o contexto gl configurado.
-     * Configurações adicionar a serem feitas antes de desenhar mas depois da chamada
-     * à gl.useProgram() também devem ser feitas aqui usando a função f_extra.
-     * Este método deve ser sobrescrito nas subclasses para definir os parâmetros da
-     * chamada ao gl.drawArrays().
+     * Desenha todos as instâncias desta classe.
+     * As subclasses devem sobrescrever este método.
      */
-    draw(f_extra) {
-        console.assert(typeof(f_extra) == "function");
-        this.gl.useProgram(this.program);
-        this.set_resolution();
-        f_extra();
-        this.gl.bindVertexArray(this.vao);
+    static draw(f_extra) {
+        if (f_extra != undefined) console.assert(typeof(f_extra) == "function");
 
-        /* Chamar gl.drawArrays(...) na subclasse com parâmetros corretos */
+        this.gl.useProgram(this.program);
+        this.gl.bindVertexArray(this.vao);
+        this.set_uniforms();
+        if (f_extra != undefined) f_extra();
+
+        /* bindBuffer, bufferData, drawArrays, etc */
     }
 
-
+    /* As subclasses devem implementar pelo menos os seguintes métodos não estáticos */
+    constructor() {}
+    set_value() {}
+    delete() {}
 }
 
-/** Representa um ponto no espaço 2D */
-class Point extends BaseWebGLObject {
+class Point extends Base {
+    static get_atributos() {
+        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
+        // this.a_color = this.gl.getAttribLocation(this.program, "a_color");
+    }
+
+    static get_uniforms() {
+        this.u_pointsize = this.gl.getUniformLocation(this.program, "u_pointsize");
+        this.u_resolution = this.gl.getUniformLocation(this.program, "u_resolution");
+        // this.u_color = this.gl.getUniformLocation(this.program, "u_color");
+    }
+
+    static set_uniforms() {
+        this.gl.uniform2f(
+            this.u_resolution, this.gl.canvas.width, this.gl.canvas.height);
+        this.gl.uniform1f(this.u_pointsize, 0.5);
+    }
+
+    static init_vao_e_buffers() {
+        super.init_vao_e_buffers();
+
+        // a_position
+        console.assert(this.a_position != null, "atributo a_position não foi setado");
+        this.a_position_buf = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
+        this.gl.enableVertexAttribArray(this.a_position);
+        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
+    }
+
+    static draw(f_extra) {
+        super.draw(f_extra);
+
+        const data = Array(2 * this.list.length);
+        for (let i = 0; i < this.list.length; i++) {
+            const p = this.list[i];
+            data[i*2+0] = p.x;
+            data[i*2+1] = p.y;
+        }
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
+        this.gl.bufferData(
+            this.gl.ARRAY_BUFFER, new Float32Array(data), this.gl.STATIC_DRAW);
+
+        this.gl.drawArrays(this.gl.POINTS, 0, this.list.length);
+    }
+
     constructor(x, y) {
         super();
 
@@ -126,98 +146,26 @@ class Point extends BaseWebGLObject {
 
         this.x = x;
         this.y = y;
+
+        this.constructor.list.push(this);
     }
 
-    get_atributos() {
-        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
+    set_value(x, y) {
+        console.assert(typeof(x) == "number", "x precisa ser um número");
+        console.assert(typeof(y) == "number", "y precisa ser um número");
+
+        this.x = x;
+        this.y = y;
     }
 
-    get_uniforms() {
-        this.u_pointsize = this.gl.getUniformLocation(this.program, "u_pointsize");
-        this.u_color = this.gl.getUniformLocation(this.program, "u_color");
-    }
-
-    set_uniforms(pointsize, color) {
-        this.gl.uniform1f(this.u_pointsize, pointsize);
-        this.gl.uniform4fv(this.u_color, new Float32Array(color));
-    }
-
-    init_buffer() {
-        super.init_buffer()
-        const vec2 = new Float32Array([this.x, this.y]);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, vec2, this.gl.STATIC_DRAW);
-    }
-
-    init_vao() {
-        super.init_vao();
-
-        // Como extrair valores do buffer de a_position
-        console.assert(this.a_position != null, "atributo a_position não foi setado");
-        this.gl.enableVertexAttribArray(this.a_position);
-        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
-    }
-
-    draw(f_extra) {
-        super.draw(f_extra);
-        this.gl.drawArrays(this.gl.POINTS, 0, 1);
+    delete() {
+        const index = this.constructor.list.indexOf(this);
+        this.constructor.list.splice(index, 1);
     }
 }
-
-/** Representa um segmento de reta no espaço 2D */
-class Line extends BaseWebGLObject {
-    constructor(x1, y1, x2, y2) {
-        super();
-
-        console.assert(typeof(x1) == "number", "x1 precisa ser um número");
-        console.assert(typeof(y1) == "number", "y1 precisa ser um número");
-        console.assert(typeof(x2) == "number", "x2 precisa ser um número");
-        console.assert(typeof(y2) == "number", "y2 precisa ser um número");
-
-        this.x1 = x1;
-        this.y1 = y1;
-        this.x2 = x2;
-        this.y2 = y2;
-    }
-
-    get_atributos() {
-        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
-    }
-
-    get_uniforms() {
-        this.u_color = this.gl.getUniformLocation(this.program, "u_color");
-    }
-
-    set_uniforms(color) {
-        this.gl.uniform4fv(this.u_color, new Float32Array(color));
-    }
-
-    init_buffer() {
-        super.init_buffer();
-
-        const coords = [this.x1, this.y1, this.x2, this.y2];
-        const vec2 = new Float32Array(coords);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, vec2, this.gl.STATIC_DRAW);
-    }
-
-    init_vao() {
-        super.init_vao();
-
-        // Como extrair valores do buffer de a_position
-        console.assert(this.a_position != null, "atributo a_position não foi setado");
-        this.gl.enableVertexAttribArray(this.a_position);
-        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
-    }
-
-    draw(f_extra) {
-        super.draw(f_extra);
-        this.gl.drawArrays(this.gl.LINES, 0, 2);
-    }
-}
-
 
 /**
- * Inicializa gl, viewport e clearColor e configura os handlers de interação com o
- * mouse e com o teclado.
+ * Inicializa gl, viewport e clearColor.
  * Retorna o contexto gl.
  */
 function init_gl()
@@ -231,8 +179,6 @@ function init_gl()
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(1, 1, 1, 1);
-
-    canvas.onmousemove = mousemove_handler;
 
     return gl;
 }
@@ -267,54 +213,40 @@ function main()
     // Compila programa a partir do código dos vertex e fragment shaders
     const program = initShaders(gl, "vs", "fs");
 
+    // Configura classes
+    Point.init(gl, program);
+
+    // Cria pontos
+    for (const _ of Array(70000)) {
+        new Point(0, 0);
+    }
+
     window.requestAnimationFrame(() => draw_loop(gl, program));
 }
 
 function draw_loop(gl, program) {
-    // Cria pontos aleatórios
-    const points = [];
-    for (const _ of Array(200)) {
-        const p = new Point(
-            randrange(150, gl.canvas.width),
-            randrange(150, gl.canvas.height)
-        );
-        p.init(gl, program);
-        points.push(p);
-    }
-
-    // Cria retas aleatórias
-    const lines = [];
-    for (const _ of Array(50)) {
-        const l = new Line(
-            randrange(0, gl.canvas.height/2),
-            randrange(0, gl.canvas.height/2),
-            randrange(0, gl.canvas.height/2),
-            randrange(0, gl.canvas.height/2)
-        );
-        l.init(gl, program);
-        lines.push(l);
-    }
-
+    const t0 = performance.now();
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // Desenha todos os pontos em points
-    for (const p of points) {
-        p.draw(() => {
-            const pointsize = 3;
-            const random_color = [Math.random(), Math.random(), Math.random(), 1];
-            p.set_uniforms(pointsize, random_color);
-        });
+    for (const p of Point.list) {
+        p.set_value(
+            randrange(0, gl.canvas.width),
+            randrange(0, gl.canvas.height)
+        );
     }
+    Point.draw();
 
-    // Desenha todas as restas em lines
-    for (const l of lines) {
-        l.draw(() => {
-            const random_color = [Math.random(), Math.random(), Math.random(), 1];
-            l.set_uniforms(random_color);
-        });
-    }
+    const t1 = performance.now();
+    const frame_time = t1-t0;
+    const fps = Math.round(1000/frame_time);
 
-    // window.requestAnimationFrame(() => draw_loop(gl, program));
+    const frame_time_el = document.querySelector("#frame_time");
+    const fps_el = document.querySelector("#fps");
+    fps_el.textContent = `FPS: ${fps}`
+    frame_time_el.textContent = `Frame time: ${frame_time}ms`
+
+    window.requestAnimationFrame(() => draw_loop(gl, program));
 }
 
 window.onload = main;
