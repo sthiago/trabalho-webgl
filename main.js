@@ -7,8 +7,9 @@ class Base {
      * Lista que contém todos os objetos dessa classe. Guardando eles numa lista, eu
      * posso fazer apenas uma chamada a gl.drawArrays() para todos da mesma primitiva,
      * em vez de ter que fazer uma chamada para cada objeto.
+     * Cada subclasse tem de inicializar sua lista
      */
-    static list = [];
+    static list;
 
     /**
      * Define o contexto gl para que a classe consiga fazer chamadas à WebGL: acessar
@@ -98,6 +99,8 @@ class Base {
 }
 
 class Point extends Base {
+    static list = [];
+
     static get_atributos() {
         this.a_position = this.gl.getAttribLocation(this.program, "a_position");
         this.a_color = this.gl.getAttribLocation(this.program, "a_color");
@@ -189,6 +192,109 @@ class Point extends Base {
     }
 }
 
+class Line extends Base {
+    static list = [];
+
+    static get_atributos() {
+        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
+        this.a_color = this.gl.getAttribLocation(this.program, "a_color");
+    }
+
+    static get_uniforms() {
+        this.u_resolution = this.gl.getUniformLocation(this.program, "u_resolution");
+    }
+
+    static set_uniforms() {
+        this.gl.uniform2f(
+            this.u_resolution, this.gl.canvas.width, this.gl.canvas.height);
+    }
+
+    static init_vao_e_buffers() {
+        super.init_vao_e_buffers();
+
+        // a_position
+        console.assert(this.a_position != null, "atributo a_position não foi setado");
+        this.a_position_buf = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
+        this.gl.enableVertexAttribArray(this.a_position);
+        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
+
+        // a_color
+        console.assert(this.a_color != null, "atributo a_color não foi setado");
+        this.a_color_buf = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
+        this.gl.enableVertexAttribArray(this.a_color);
+        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.FLOAT, false, 0, 0);
+    }
+
+    static draw(f_extra) {
+        super.draw(f_extra);
+
+        // a_position
+        const position_data = Array(2 * 2 * this.list.length);
+        for (let i = 0; i < this.list.length; i++) {
+            const l = this.list[i];
+            position_data[i*4+0] = l.x1;
+            position_data[i*4+1] = l.y1;
+            position_data[i*4+2] = l.x2;
+            position_data[i*4+3] = l.y2;
+        }
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
+        this.gl.bufferData(
+            this.gl.ARRAY_BUFFER, new Float32Array(position_data), this.gl.STATIC_DRAW);
+
+        // a_color
+        const color_data = Array(2 * 4 * this.list.length);
+        for (let i = 0; i < this.list.length; i++) {
+            const p = this.list[i];
+            color_data[i*8+0] = p.color[0];
+            color_data[i*8+1] = p.color[1];
+            color_data[i*8+2] = p.color[2];
+            color_data[i*8+3] = p.color[3];
+            color_data[i*8+4] = p.color[0];
+            color_data[i*8+5] = p.color[1];
+            color_data[i*8+6] = p.color[2];
+            color_data[i*8+7] = p.color[3];
+        }
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
+        this.gl.bufferData(
+            this.gl.ARRAY_BUFFER, new Float32Array(color_data), this.gl.STATIC_DRAW);
+
+        this.gl.drawArrays(this.gl.LINES, 0, 2 * this.list.length);
+    }
+
+    constructor(x1, y1, x2, y2) {
+        super();
+
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+
+        // Cor padrão = preto
+        this.color = [1, 0, 0, 1];
+
+        this.constructor.list.push(this);
+    }
+
+    delete() {
+        const index = this.constructor.list.indexOf(this);
+        this.constructor.list.splice(index, 1);
+    }
+
+    set_position(x1, y1, x2, y2) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+    }
+
+    set_color(r, g, b, a) {
+        this.color = [r, g, b, a];
+    }
+}
+
+
 /**
  * Inicializa gl, viewport e clearColor.
  * Retorna o contexto gl.
@@ -240,10 +346,12 @@ function main()
 
     // Configura classes
     Point.init(gl, program);
+    Line.init(gl, program);
 
     // Cria pontos
-    for (const _ of Array(20000)) {
+    for (const _ of Array(50)) {
         new Point(0, 0);
+        new Line(0, 0, 0, 0);
     }
 
     window.requestAnimationFrame(() => draw_loop(gl, program));
@@ -253,15 +361,28 @@ function draw_loop(gl, program) {
     const t0 = performance.now();
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // Desenha todos os pontos em points
+    // Randomiza pontos
     for (const p of Point.list) {
         p.set_position(
-            randrange(0, gl.canvas.width),
-            randrange(0, gl.canvas.height)
+            randrange(gl.canvas.width/2, gl.canvas.width),
+            randrange(gl.canvas.height/2, gl.canvas.height)
         );
         p.set_color(Math.random(), Math.random(), Math.random(), 1);
     }
+
+    // Randomiza linhas
+    for (const l of Line.list) {
+        l.set_position(
+            randrange(0, gl.canvas.width/2),
+            randrange(0, gl.canvas.height/2),
+            randrange(0, gl.canvas.width/2),
+            randrange(0, gl.canvas.height/2),
+        );
+        l.set_color(Math.random(), Math.random(), Math.random(), 1);
+    }
+
     Point.draw();
+    Line.draw();
 
     const t1 = performance.now();
     const frame_time = t1-t0;
@@ -272,7 +393,7 @@ function draw_loop(gl, program) {
     fps_el.textContent = `FPS: ${fps}`
     frame_time_el.textContent = `Frame time: ${frame_time}ms`
 
-    // window.requestAnimationFrame(() => draw_loop(gl, program));
+    window.requestAnimationFrame(() => draw_loop(gl, program));
 }
 
 window.onload = main;
