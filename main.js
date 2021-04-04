@@ -437,6 +437,24 @@ function main()
     let polygon_tmp;
     let polygon_first_line;
 
+    // Função auxiliar que finaliza o desenho do polígono
+    const finaliza_polygon = () => {
+        if (polygon_tmp != undefined) {
+            polygon_tmp.vertices.pop();
+            polygon_tmp.vertices.pop();
+
+            if (polygon_tmp.vertices.length/2 < 3) {
+                polygon_tmp.delete();
+            }
+            polygon_tmp = undefined;
+
+            if (polygon_first_line != undefined) {
+                polygon_first_line.delete();
+                polygon_first_line = undefined;
+            }
+        }
+    }
+
     // Botões
     btn_ponto.className = "selected";
     btn_ponto.onclick = () => {
@@ -444,43 +462,27 @@ function main()
         btn_ponto.className = btn_ponto.className == "selected" ? "" : "selected";
         btn_linha.className = "";
         btn_poligono.className = "";
-        if (polygon_tmp != undefined) {
-            polygon_tmp.vertices.pop();
-            polygon_tmp.vertices.pop();
-            polygon_tmp = undefined;
-        }
+        finaliza_polygon();
     }
     btn_linha.onclick = () => {
         ferramenta = "line";
         btn_linha.className = btn_linha.className == "selected" ? "" : "selected";
         btn_ponto.className = "";
         btn_poligono.className = "";
-        if (polygon_tmp != undefined) {
-            polygon_tmp.vertices.pop();
-            polygon_tmp.vertices.pop();
-            polygon_tmp = undefined;
-        }
+        finaliza_polygon();
     }
     btn_poligono.onclick = () => {
         ferramenta = "polygon";
         btn_poligono.className = btn_poligono.className == "selected" ? "" : "selected";
         btn_ponto.className = "";
         btn_linha.className = "";
-        if (polygon_tmp != undefined) {
-            polygon_tmp.vertices.pop();
-            polygon_tmp.vertices.pop();
-            polygon_tmp = undefined;
-        }
+        finaliza_polygon();
     }
     btn_limpar.onclick = () => {
         Point.list.length = 0;
         Line.list.length = 0;
         Polygon.list.length = 0;
-        if (polygon_tmp != undefined) {
-            polygon_tmp.vertices.pop();
-            polygon_tmp.vertices.pop();
-            polygon_tmp = undefined;
-        }
+        finaliza_polygon();
     }
 
     // Seleção de cores
@@ -495,8 +497,23 @@ function main()
 
             // Seta a cor
             cor = cores[key];
+
+            // Muda a cor do polígono se ele estiver sendo desenhado
+            if (polygon_tmp != undefined) {
+                polygon_tmp.set_color.apply(polygon_tmp, cor);
+            }
+            if (polygon_first_line != undefined) {
+                polygon_first_line.set_color.apply(polygon_first_line, cor);
+            }
         }
     }
+
+    // Inicia keyboard handling
+    document.addEventListener ('keyup', (event) => {
+        if (event.key == "Escape") {
+            finaliza_polygon();
+        }
+    });
 
     // Inicializa mouse handling
     let mouseX, mouseY;
