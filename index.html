@@ -39,6 +39,25 @@
             padding: 10px;
         }
 
+        .cor {
+            display: inline-block;
+            padding: 2px;
+            width: 20px;
+            height: 20px;
+        }
+
+        .cor-selected {
+            border: 3px solid ghostwhite;
+        }
+
+        #cor_vermelho { background-color: #FF595E; }
+        #cor_amarelo  { background-color: #FFCA3A; }
+        #cor_verde    { background-color: #8AC926; }
+        #cor_azul     { background-color: #1982C4; }
+        #cor_roxo     { background-color: #6A4C93; }
+        #cor_preto    { background-color: #000000; }
+
+
         .selected {
             font-weight: bold;
         }
@@ -89,6 +108,15 @@
         <div id="mouse_position">mouse_pos: (0, 0)</div>
         <div id="linha_count"></div>
         <div id="ponto_count"></div>
+        <div>
+            Cor:
+            <span class="cor" id="cor_vermelho"></span>
+            <span class="cor" id="cor_amarelo"></span>
+            <span class="cor" id="cor_verde"></span>
+            <span class="cor" id="cor_azul"></span>
+            <span class="cor" id="cor_roxo"></span>
+            <span class="cor cor-selected" id="cor_preto"></span>
+        </div>
         <button id="btn_ponto">Ponto</button>
         <button id="btn_linha">Linha</button>
         <button id="btn_limpar">Limpar</button>

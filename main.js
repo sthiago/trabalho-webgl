@@ -132,7 +132,7 @@ class Point extends Base {
         this.a_color_buf = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
         this.gl.enableVertexAttribArray(this.a_color);
-        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.FLOAT, false, 0, 0);
+        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.UNSIGNED_BYTE, true, 0, 0);
     }
 
     static draw(f_extra) {
@@ -160,7 +160,7 @@ class Point extends Base {
         }
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
         this.gl.bufferData(
-            this.gl.ARRAY_BUFFER, new Float32Array(color_data), this.gl.STATIC_DRAW);
+            this.gl.ARRAY_BUFFER, new Uint8Array(color_data), this.gl.STATIC_DRAW);
 
         this.gl.drawArrays(this.gl.POINTS, 0, this.list.length);
     }
@@ -172,7 +172,7 @@ class Point extends Base {
         this.y = y;
 
         // Cor padrão = preto
-        this.color = [0, 0, 0, 1];
+        this.color = [0, 0, 0, 255];
 
         this.constructor.list.push(this);
     }
@@ -224,7 +224,7 @@ class Line extends Base {
         this.a_color_buf = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
         this.gl.enableVertexAttribArray(this.a_color);
-        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.FLOAT, false, 0, 0);
+        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.UNSIGNED_BYTE, true, 0, 0);
     }
 
     static draw(f_extra) {
@@ -258,7 +258,7 @@ class Line extends Base {
         }
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
         this.gl.bufferData(
-            this.gl.ARRAY_BUFFER, new Float32Array(color_data), this.gl.STATIC_DRAW);
+            this.gl.ARRAY_BUFFER, new Uint8Array(color_data), this.gl.STATIC_DRAW);
 
         this.gl.drawArrays(this.gl.LINES, 0, 2 * this.list.length);
     }
@@ -272,7 +272,7 @@ class Line extends Base {
         this.y2 = y2;
 
         // Cor padrão = preto
-        this.color = [1, 0, 0, 1];
+        this.color = [0, 0, 0, 255];
 
         this.constructor.list.push(this);
     }
@@ -326,9 +326,27 @@ function main()
     const btn_ponto = document.querySelector("#btn_ponto");
     const btn_linha = document.querySelector("#btn_linha");
     const btn_limpar = document.querySelector("#btn_limpar");
+    const cores_elms = {
+        'vermelho' : document.querySelector("#cor_vermelho"),
+        'amarelo'  : document.querySelector("#cor_amarelo"),
+        'verde'    : document.querySelector("#cor_verde"),
+        'azul'     : document.querySelector("#cor_azul"),
+        'roxo'     : document.querySelector("#cor_roxo"),
+        'preto'    : document.querySelector("#cor_preto"),
+    }
+    const cores = {
+        'vermelho' : [255, 89, 94, 255],
+        'amarelo'  : [255, 202, 58, 255],
+        'verde'    : [138, 201, 38, 255],
+        'azul'     : [25, 130, 196, 255],
+        'roxo'     : [106, 76, 147, 255],
+        'preto'    : [0, 0, 0, 255],
+    }
+
 
     // Variáveis de controle
     let ferramenta = "point";
+    let cor = cores.preto;
     let line_tmp;
 
     // Botões
@@ -349,6 +367,21 @@ function main()
         // draw_scene(gl, program);
     }
 
+    // Seleção de cores
+    for (const key of Object.keys(cores_elms)) {
+        const btn = cores_elms[key];
+        btn.onclick = () => {
+            // Desseleciona todos
+            Object.values(cores_elms).forEach((el) => el.className = "cor");
+
+            // Seleciona o atual
+            btn.className = "cor cor-selected";
+
+            // Seta a cor
+            cor = cores[key];
+        }
+    }
+
     // Inicializa mouse handling
     let mouseX, mouseY;
     canvas.onmousemove = (e) => {
@@ -366,7 +399,10 @@ function main()
     }
 
     canvas.onclick = (e) => {
-        if (ferramenta == "point") new Point(mouseX, mouseY);
+        if (ferramenta == "point") {
+            const p = new Point(mouseX, mouseY);
+            p.set_color.apply(p, cor);
+        };
 
         // draw_scene(gl, program);
     }
@@ -374,6 +410,7 @@ function main()
     canvas.onmousedown = (e) => {
         if (ferramenta == "line" && line_tmp == undefined) {
             line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
+            line_tmp.set_color.apply(line_tmp, cor);
         }
         // draw_scene(gl, program);
     }
