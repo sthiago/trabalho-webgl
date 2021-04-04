@@ -332,12 +332,21 @@ function main()
     let line_tmp;
 
     // Botões
-    btn_ponto.onclick = () => { ferramenta = "point"; }
-    btn_linha.onclick = () => { ferramenta = "line"; }
+    btn_ponto.className = "selected";
+    btn_ponto.onclick = () => {
+        ferramenta = "point";
+        btn_ponto.className = btn_ponto.className == "selected" ? "" : "selected";
+        btn_linha.className = "";
+    }
+    btn_linha.onclick = () => {
+        ferramenta = "line";
+        btn_linha.className = btn_linha.className == "selected" ? "" : "selected";
+        btn_ponto.className = "";
+    }
     btn_limpar.onclick = () => {
         Point.list.length = 0;
         Line.list.length = 0;
-        draw_scene(gl, program);
+        // draw_scene(gl, program);
     }
 
     // Inicializa mouse handling
@@ -353,31 +362,36 @@ function main()
             line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
         }
 
-        draw_scene(gl, program);
+        // draw_scene(gl, program);
     }
 
     canvas.onclick = (e) => {
         if (ferramenta == "point") new Point(mouseX, mouseY);
 
-        draw_scene(gl, program);
+        // draw_scene(gl, program);
     }
 
     canvas.onmousedown = (e) => {
         if (ferramenta == "line" && line_tmp == undefined) {
             line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
         }
-        draw_scene(gl, program);
+        // draw_scene(gl, program);
     }
 
     canvas.onmouseup = (e) => {
         if (ferramenta == "line" && line_tmp != undefined) {
+            if (line_tmp.x1 == line_tmp.x2 && line_tmp.y1 == line_tmp.y2) {
+                line_tmp.delete();
+            }
             line_tmp = undefined;
         }
-        draw_scene(gl, program);
+        // draw_scene(gl, program);
     }
 
+    canvas.onmouseleave = canvas.onmouseup;
 
-    draw_scene(gl, program);
+
+    window.requestAnimationFrame(() => draw_scene(gl, program));
 }
 
 function draw_scene(gl, program) {
@@ -391,6 +405,8 @@ function draw_scene(gl, program) {
 
     ponto_count.textContent = `Pontos: ${Point.list.length}`;
     linha_count.textContent = `Linhas: ${Line.list.length}`;
+
+    window.requestAnimationFrame(() => draw_scene(gl, program));
 }
 
 window.onload = main;

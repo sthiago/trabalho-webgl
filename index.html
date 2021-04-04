@@ -16,6 +16,17 @@
             background-color:ghostwhite;
         }
 
+        div {
+            margin: 4px;
+        }
+
+        button {
+            display: block;
+            padding: 4px;
+            margin: 4px;
+            width: 100px;
+        }
+
         #canvas {
             float: left;
             margin: 10px;;
@@ -26,6 +37,10 @@
         #info {
             float: left;
             padding: 10px;
+        }
+
+        .selected {
+            font-weight: bold;
         }
     </style>
 </head>
@@ -71,7 +86,7 @@
 
     <canvas id="canvas" width="300" height="300"></canvas>
     <div id="info">
-        <div id="mouse_position"></div>
+        <div id="mouse_position">mouse_pos: (0, 0)</div>
         <div id="linha_count"></div>
         <div id="ponto_count"></div>
         <button id="btn_ponto">Ponto</button>
