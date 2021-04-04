@@ -332,47 +332,32 @@ class Polygon extends Base {
     static draw(f_extra) {
         super.draw(f_extra);
 
-        // a_position
-        let position_data = [];
         for (const p of this.list) {
-            position_data = position_data.concat(p.vertices);
-        }
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
-        this.gl.bufferData(
-            this.gl.ARRAY_BUFFER, new Float32Array(position_data), this.gl.STATIC_DRAW);
+            // a_position
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
+            this.gl.bufferData(
+                this.gl.ARRAY_BUFFER,
+                new Float32Array(p.vertices),
+                this.gl.STATIC_DRAW
+            );
 
-        // a_color
-        let color_data = [];
-        for (const p of this.list) {
+            // a_color
+            let color_data = [];
             for (let i = 0; i < p.vertices.length/2; i++) {
                 color_data = color_data.concat(p.color);
             }
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
+            this.gl.bufferData(
+                this.gl.ARRAY_BUFFER, new Uint8Array(color_data), this.gl.STATIC_DRAW);
+
+            this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, p.vertices.length/2);
         }
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
-        this.gl.bufferData(
-            this.gl.ARRAY_BUFFER, new Uint8Array(color_data), this.gl.STATIC_DRAW);
-
-        // Calcula quantidade de vértices em todos os polígonos
-        let vertice_count = 0;
-        for (const p of this.list) {
-            vertice_count += p.vertices.length / 2;
-        }
-
-        this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, vertice_count);
     }
 
-    constructor(vertice_list) {
+    constructor() {
         super();
 
-        console.assert(
-            vertice_list.length >= 6, "O polígono precisa ter pelo menos 3 vértices");
-        for (const coord of vertice_list) {
-            console.assert(
-                typeof(coord) == "number", "As coordenadas precisam ser números");
-        }
-
-        this.vertices = vertice_list;
+        this.vertices = [];
 
         // Cor padrão = preto
         this.color = [0, 0, 0, 255];
@@ -385,15 +370,8 @@ class Polygon extends Base {
         this.constructor.list.splice(index, 1);
     }
 
-    set_vertices(vertice_list) {
-        console.assert(
-            vertice_list.length >= 6, "O polígono precisa ter pelo menos 3 vértices");
-        for (const coord of vertice_list) {
-            console.assert(
-                typeof(coord) == "number", "As coordenadas precisam ser números");
-        }
-
-        this.vertices = vertice_list;
+    add_vertex(x, y) {
+        this.vertices.push(x, y);
     }
 
     set_color(r, g, b, a) {
@@ -432,6 +410,7 @@ function main()
     const mouse_position_el = document.querySelector("#mouse_position");
     const btn_ponto = document.querySelector("#btn_ponto");
     const btn_linha = document.querySelector("#btn_linha");
+    const btn_poligono = document.querySelector("#btn_poligono");
     const btn_limpar = document.querySelector("#btn_limpar");
     const cores_elms = {
         'vermelho' : document.querySelector("#cor_vermelho"),
@@ -455,6 +434,7 @@ function main()
     let ferramenta = "point";
     let cor = cores.preto;
     let line_tmp;
+    let polygon_tmp;
 
     // Botões
     btn_ponto.className = "selected";
@@ -462,16 +442,28 @@ function main()
         ferramenta = "point";
         btn_ponto.className = btn_ponto.className == "selected" ? "" : "selected";
         btn_linha.className = "";
+        btn_poligono.className = "";
+        polygon_tmp = undefined;
     }
     btn_linha.onclick = () => {
         ferramenta = "line";
         btn_linha.className = btn_linha.className == "selected" ? "" : "selected";
         btn_ponto.className = "";
+        btn_poligono.className = "";
+        polygon_tmp = undefined;
+    }
+    btn_poligono.onclick = () => {
+        ferramenta = "polygon";
+        btn_poligono.className = btn_poligono.className == "selected" ? "" : "selected";
+        btn_ponto.className = "";
+        btn_linha.className = "";
+        polygon_tmp = undefined;
     }
     btn_limpar.onclick = () => {
         Point.list.length = 0;
         Line.list.length = 0;
-        // draw_scene(gl, program);
+        Polygon.list.length = 0;
+        polygon_tmp = undefined;
     }
 
     // Seleção de cores
@@ -501,25 +493,66 @@ function main()
         if (line_tmp != undefined) {
             line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
         }
-
-        // draw_scene(gl, program);
     }
 
     canvas.onclick = (e) => {
-        if (ferramenta == "point") {
+        if (e.shiftKey) {
+            return;
+        }
+
+        // Desenha um ponto
+        if (
+            ferramenta == "point"
+            && !e.ctrlKey
+        ) {
             const p = new Point(mouseX, mouseY);
             p.set_color.apply(p, cor);
+            return;
         };
 
-        // draw_scene(gl, program);
+        // Começa a desenhar um polígono
+        if (
+            ferramenta == "polygon"
+            && polygon_tmp == undefined
+            && !e.ctrlKey
+        ) {
+            polygon_tmp = new Polygon();
+            polygon_tmp.add_vertex(mouseX, mouseY);
+            polygon_tmp.set_color.apply(polygon_tmp, cor);
+            return;
+        }
+
+        // Adiciona pontos ao polígono que está sendo desenhado
+        if (
+            ferramenta == "polygon"
+            && polygon_tmp != undefined
+            && !e.ctrlKey
+        ) {
+            polygon_tmp.add_vertex(mouseX, mouseY);
+            return;
+        }
+
+        // Finaliza o polígono sendo desenhado
+        if (
+            ferramenta == "polygon"
+            && polygon_tmp != undefined
+            && e.ctrlKey
+        ) {
+            polygon_tmp.add_vertex(mouseX, mouseY);
+            polygon_tmp.add_vertex(polygon_tmp.vertices[0], polygon_tmp.vertices[1]);
+            polygon_tmp = undefined;
+        }
     }
 
     canvas.onmousedown = (e) => {
+        if (e.ctrlKey || e.shiftKey) {
+            return;
+        }
+
         if (ferramenta == "line" && line_tmp == undefined) {
             line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
             line_tmp.set_color.apply(line_tmp, cor);
         }
-        // draw_scene(gl, program);
     }
 
     canvas.onmouseup = (e) => {
@@ -529,13 +562,9 @@ function main()
             }
             line_tmp = undefined;
         }
-        // draw_scene(gl, program);
     }
 
     canvas.onmouseleave = canvas.onmouseup;
-
-    new Polygon([ 50, 70, 100, 20, 150, 70, 120, 120, 70, 120 ])
-
 
     window.requestAnimationFrame(() => draw_scene(gl, program));
 }
@@ -543,15 +572,17 @@ function main()
 function draw_scene(gl, program) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    Point.draw();
-    Line.draw();
     Polygon.draw();
+    Line.draw();
+    Point.draw();
 
     const ponto_count = document.querySelector("#ponto_count");
     const linha_count = document.querySelector("#linha_count");
+    const poligono_count = document.querySelector("#poligono_count");
 
     ponto_count.textContent = `Pontos: ${Point.list.length}`;
     linha_count.textContent = `Linhas: ${Line.list.length}`;
+    poligono_count.textContent = `Polígonos: ${Polygon.list.length}`;
 
     window.requestAnimationFrame(() => draw_scene(gl, program));
 }
