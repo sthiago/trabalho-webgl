@@ -435,6 +435,7 @@ function main()
     let cor = cores.preto;
     let line_tmp;
     let polygon_tmp;
+    let polygon_first_line;
 
     // Botões
     btn_ponto.className = "selected";
@@ -443,27 +444,43 @@ function main()
         btn_ponto.className = btn_ponto.className == "selected" ? "" : "selected";
         btn_linha.className = "";
         btn_poligono.className = "";
-        polygon_tmp = undefined;
+        if (polygon_tmp != undefined) {
+            polygon_tmp.vertices.pop();
+            polygon_tmp.vertices.pop();
+            polygon_tmp = undefined;
+        }
     }
     btn_linha.onclick = () => {
         ferramenta = "line";
         btn_linha.className = btn_linha.className == "selected" ? "" : "selected";
         btn_ponto.className = "";
         btn_poligono.className = "";
-        polygon_tmp = undefined;
+        if (polygon_tmp != undefined) {
+            polygon_tmp.vertices.pop();
+            polygon_tmp.vertices.pop();
+            polygon_tmp = undefined;
+        }
     }
     btn_poligono.onclick = () => {
         ferramenta = "polygon";
         btn_poligono.className = btn_poligono.className == "selected" ? "" : "selected";
         btn_ponto.className = "";
         btn_linha.className = "";
-        polygon_tmp = undefined;
+        if (polygon_tmp != undefined) {
+            polygon_tmp.vertices.pop();
+            polygon_tmp.vertices.pop();
+            polygon_tmp = undefined;
+        }
     }
     btn_limpar.onclick = () => {
         Point.list.length = 0;
         Line.list.length = 0;
         Polygon.list.length = 0;
-        polygon_tmp = undefined;
+        if (polygon_tmp != undefined) {
+            polygon_tmp.vertices.pop();
+            polygon_tmp.vertices.pop();
+            polygon_tmp = undefined;
+        }
     }
 
     // Seleção de cores
@@ -493,6 +510,16 @@ function main()
         if (line_tmp != undefined) {
             line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
         }
+
+        if (polygon_tmp != undefined) {
+            polygon_tmp.vertices[polygon_tmp.vertices.length-2] = mouseX;
+            polygon_tmp.vertices[polygon_tmp.vertices.length-1] = mouseY;
+        }
+
+        if (polygon_first_line != undefined) {
+            polygon_first_line.set_position(
+                polygon_first_line.x1, polygon_first_line.y1, mouseX, mouseY);
+        }
     }
 
     canvas.onclick = (e) => {
@@ -518,7 +545,12 @@ function main()
         ) {
             polygon_tmp = new Polygon();
             polygon_tmp.add_vertex(mouseX, mouseY);
+            polygon_tmp.add_vertex(mouseX, mouseY);
             polygon_tmp.set_color.apply(polygon_tmp, cor);
+
+            // Cria uma linha temporária para a primeira aresta do polígono
+            polygon_first_line = new Line(mouseX, mouseY, mouseX, mouseY);
+            polygon_first_line.set_color.apply(polygon_first_line, cor);
             return;
         }
 
@@ -529,6 +561,12 @@ function main()
             && !e.ctrlKey
         ) {
             polygon_tmp.add_vertex(mouseX, mouseY);
+
+            // Deleta polygon_first_line se ela existir
+            if (polygon_first_line != undefined) {
+                polygon_first_line.delete();
+                polygon_first_line = undefined;
+            }
             return;
         }
 
