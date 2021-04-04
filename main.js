@@ -323,6 +323,15 @@ function main()
 
     // Pega referência de elementos
     const mouse_position_el = document.querySelector("#mouse_position");
+    const btn_ponto = document.querySelector("#btn_ponto");
+    const btn_linha = document.querySelector("#btn_linha");
+
+    // Variáveis de controle
+    let ferramenta = "ponto";
+    let line_tmp;
+
+    btn_ponto.onclick = () => { ferramenta = "point"; }
+    btn_linha.onclick = () => { ferramenta = "line"; }
 
     // Inicializa mouse handling
     let mouseX, mouseY;
@@ -333,14 +342,33 @@ function main()
 
         mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
 
+        if (line_tmp != undefined) {
+            line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
+        }
+
         draw_scene(gl, program);
     }
 
     canvas.onclick = (e) => {
-        new Point(mouseX, mouseY);
+        if (ferramenta == "point") new Point(mouseX, mouseY);
 
         draw_scene(gl, program);
     }
+
+    canvas.onmousedown = (e) => {
+        if (ferramenta == "line" && line_tmp == undefined) {
+            line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
+        }
+        draw_scene(gl, program);
+    }
+
+    canvas.onmouseup = (e) => {
+        if (ferramenta == "line" && line_tmp != undefined) {
+            line_tmp = undefined;
+        }
+        draw_scene(gl, program);
+    }
+
 
     draw_scene(gl, program);
 }
@@ -350,6 +378,12 @@ function draw_scene(gl, program) {
 
     Point.draw();
     Line.draw();
+
+    const ponto_count = document.querySelector("#ponto_count");
+    const linha_count = document.querySelector("#linha_count");
+
+    ponto_count.textContent = `Pontos: ${Point.list.length}`;
+    linha_count.textContent = `Linhas: ${Line.list.length}`;
 }
 
 window.onload = main;
