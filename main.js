@@ -294,6 +294,112 @@ class Line extends Base {
     }
 }
 
+class Polygon extends Base {
+    static list = [];
+
+    static get_atributos() {
+        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
+        this.a_color = this.gl.getAttribLocation(this.program, "a_color");
+    }
+
+    static get_uniforms() {
+        this.u_resolution = this.gl.getUniformLocation(this.program, "u_resolution");
+    }
+
+    static set_uniforms() {
+        this.gl.uniform2f(
+            this.u_resolution, this.gl.canvas.width, this.gl.canvas.height);
+    }
+
+    static init_vao_e_buffers() {
+        super.init_vao_e_buffers();
+
+        // a_position
+        console.assert(this.a_position != null, "atributo a_position não foi setado");
+        this.a_position_buf = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
+        this.gl.enableVertexAttribArray(this.a_position);
+        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
+
+        // a_color
+        console.assert(this.a_color != null, "atributo a_color não foi setado");
+        this.a_color_buf = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
+        this.gl.enableVertexAttribArray(this.a_color);
+        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.UNSIGNED_BYTE, true, 0, 0);
+    }
+
+    static draw(f_extra) {
+        super.draw(f_extra);
+
+        // a_position
+        let position_data = [];
+        for (const p of this.list) {
+            position_data = position_data.concat(p.vertices);
+        }
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
+        this.gl.bufferData(
+            this.gl.ARRAY_BUFFER, new Float32Array(position_data), this.gl.STATIC_DRAW);
+
+        // a_color
+        let color_data = [];
+        for (const p of this.list) {
+            for (let i = 0; i < p.vertices.length/2; i++) {
+                color_data = color_data.concat(p.color);
+            }
+        }
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
+        this.gl.bufferData(
+            this.gl.ARRAY_BUFFER, new Uint8Array(color_data), this.gl.STATIC_DRAW);
+
+        // Calcula quantidade de vértices em todos os polígonos
+        let vertice_count = 0;
+        for (const p of this.list) {
+            vertice_count += p.vertices.length / 2;
+        }
+
+        this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, vertice_count);
+    }
+
+    constructor(vertice_list) {
+        super();
+
+        console.assert(
+            vertice_list.length >= 6, "O polígono precisa ter pelo menos 3 vértices");
+        for (const coord of vertice_list) {
+            console.assert(
+                typeof(coord) == "number", "As coordenadas precisam ser números");
+        }
+
+        this.vertices = vertice_list;
+
+        // Cor padrão = preto
+        this.color = [0, 0, 0, 255];
+
+        this.constructor.list.push(this);
+    }
+
+    delete() {
+        const index = this.constructor.list.indexOf(this);
+        this.constructor.list.splice(index, 1);
+    }
+
+    set_vertices(vertice_list) {
+        console.assert(
+            vertice_list.length >= 6, "O polígono precisa ter pelo menos 3 vértices");
+        for (const coord of vertice_list) {
+            console.assert(
+                typeof(coord) == "number", "As coordenadas precisam ser números");
+        }
+
+        this.vertices = vertice_list;
+    }
+
+    set_color(r, g, b, a) {
+        this.color = [r, g, b, a];
+    }
+}
 
 /** Função utilitária para gerar um número (float) entre min e max */
 function randrange(min, max) {
@@ -320,6 +426,7 @@ function main()
     // Configura classes primitivas
     Point.init(gl, program);
     Line.init(gl, program);
+    Polygon.init(gl, program);
 
     // Pega referência de elementos
     const mouse_position_el = document.querySelector("#mouse_position");
@@ -427,6 +534,8 @@ function main()
 
     canvas.onmouseleave = canvas.onmouseup;
 
+    new Polygon([ 50, 70, 100, 20, 150, 70, 120, 120, 70, 120 ])
+
 
     window.requestAnimationFrame(() => draw_scene(gl, program));
 }
@@ -436,6 +545,7 @@ function draw_scene(gl, program) {
 
     Point.draw();
     Line.draw();
+    Polygon.draw();
 
     const ponto_count = document.querySelector("#ponto_count");
     const linha_count = document.querySelector("#linha_count");
