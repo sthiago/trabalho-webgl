@@ -295,13 +295,16 @@ class Line extends Base {
 }
 
 
-/**
- * Inicializa gl, viewport e clearColor.
- * Retorna o contexto gl.
- */
-function init_gl()
+/** Função utilitária para gerar um número (float) entre min e max */
+function randrange(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+function main()
 {
+    // Cria e configura gl
     const canvas = document.querySelector("#canvas");
+    const rect = canvas.getBoundingClientRect();
     const gl = canvas.getContext("webgl2");
     if (!gl) {
         alert("Sem suporte a WebGL 2.0");
@@ -311,89 +314,42 @@ function init_gl()
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(1, 1, 1, 1);
 
-    return gl;
-}
-
-/* Função que lida com movimentos do mouse */
-function mousemove_handler(e)
-{
-    const canvas = document.querySelector("#canvas");
-    const rect = canvas.getBoundingClientRect();
-    const mouse_position_el = document.querySelector("#mouse_position");
-
-    // O -1 é da borda de 1px
-    const mouseX = e.clientX - rect.left - 1;
-    const mouseY = e.clientY - rect.top - 1;
-
-    mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
-}
-
-
-/** Função utilitária para gerar um número (float) entre min e max */
-function randrange(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
-/** Ponto de entrada da aplicação */
-function main()
-{
-    // Cria e configura gl
-    const gl = init_gl();
-    if (!gl) return;
-
     // Compila programa a partir do código dos vertex e fragment shaders
     const program = initShaders(gl, "vs", "fs");
 
-    // Configura classes
+    // Configura classes primitivas
     Point.init(gl, program);
     Line.init(gl, program);
 
-    // Cria pontos
-    for (const _ of Array(50)) {
-        new Point(0, 0);
-        new Line(0, 0, 0, 0);
+    // Pega referência de elementos
+    const mouse_position_el = document.querySelector("#mouse_position");
+
+    // Inicializa mouse handling
+    let mouseX, mouseY;
+    canvas.onmousemove = (e) => {
+        // O -1 é da borda de 1px
+        mouseX = e.clientX - rect.left - 1;
+        mouseY = e.clientY - rect.top - 1;
+
+        mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
+
+        draw_scene(gl, program);
     }
 
-    window.requestAnimationFrame(() => draw_loop(gl, program));
+    canvas.onclick = (e) => {
+        new Point(mouseX, mouseY);
+
+        draw_scene(gl, program);
+    }
+
+    draw_scene(gl, program);
 }
 
-function draw_loop(gl, program) {
-    const t0 = performance.now();
+function draw_scene(gl, program) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    // Randomiza pontos
-    for (const p of Point.list) {
-        p.set_position(
-            randrange(gl.canvas.width/2, gl.canvas.width),
-            randrange(gl.canvas.height/2, gl.canvas.height)
-        );
-        p.set_color(Math.random(), Math.random(), Math.random(), 1);
-    }
-
-    // Randomiza linhas
-    for (const l of Line.list) {
-        l.set_position(
-            randrange(0, gl.canvas.width/2),
-            randrange(0, gl.canvas.height/2),
-            randrange(0, gl.canvas.width/2),
-            randrange(0, gl.canvas.height/2),
-        );
-        l.set_color(Math.random(), Math.random(), Math.random(), 1);
-    }
 
     Point.draw();
     Line.draw();
-
-    const t1 = performance.now();
-    const frame_time = t1-t0;
-    const fps = Math.round(1000/frame_time);
-
-    const frame_time_el = document.querySelector("#frame_time");
-    const fps_el = document.querySelector("#fps");
-    fps_el.textContent = `FPS: ${fps}`
-    frame_time_el.textContent = `Frame time: ${frame_time}ms`
-
-    window.requestAnimationFrame(() => draw_loop(gl, program));
 }
 
 window.onload = main;
