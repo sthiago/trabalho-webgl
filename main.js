@@ -325,13 +325,20 @@ function main()
     const mouse_position_el = document.querySelector("#mouse_position");
     const btn_ponto = document.querySelector("#btn_ponto");
     const btn_linha = document.querySelector("#btn_linha");
+    const btn_limpar = document.querySelector("#btn_limpar");
 
     // Variáveis de controle
-    let ferramenta = "ponto";
+    let ferramenta = "point";
     let line_tmp;
 
+    // Botões
     btn_ponto.onclick = () => { ferramenta = "point"; }
     btn_linha.onclick = () => { ferramenta = "line"; }
+    btn_limpar.onclick = () => {
+        Point.list.length = 0;
+        Line.list.length = 0;
+        draw_scene(gl, program);
+    }
 
     // Inicializa mouse handling
     let mouseX, mouseY;
