@@ -479,14 +479,10 @@ function main()
     const refs = get_elementos();
     const [ gl, program, rect ] = init_webgl(refs);
 
-    // Referências temporárias
-    const cores_elms = refs.cores_elms;
-    const cores = refs.cores;
-
     // Variáveis de controle
     const controle = {
         "ferramenta": "point",
-        "cor": cores.preto,
+        "cor": refs.cores.preto,
         "line_tmp": undefined,
         "polygon_tmp": undefined,
         "polygon_first_line": undefined,
