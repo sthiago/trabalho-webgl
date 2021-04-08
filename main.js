@@ -357,6 +357,7 @@ function main()
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(1, 1, 1, 1);
+    gl.lineWidth(3);
 
     // Compila programa a partir do código dos vertex e fragment shaders
     const program = initShaders(gl, "vs", "fs");
