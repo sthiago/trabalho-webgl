@@ -411,6 +411,37 @@ function init_cores(refs, controle) {
     }
 }
 
+/** Função que finaliza/interrompe o desenho de um polígono */
+function finaliza_polygon(controle) {
+    const polygon_tmp = controle.polygon_tmp;
+    const polygon_first_line = controle.polygon_first_line;
+
+    // Nada a fazer se não estivermos durante o desenho de um polígono
+    if (polygon_tmp == undefined) {
+        return;
+    }
+
+    // Remove o último vértice do polígono temporário (vértice que segue o mouse)
+    polygon_tmp.vertices.pop();
+    polygon_tmp.vertices.pop();
+
+    // Se o polígono sendo desenhado tiver menos do que 3 vértices (lembrar que o último
+    // foi removido), significa que ele não é um polígono, então deve ser deletado.
+    if (polygon_tmp.vertices.length/2 < 3) {
+        polygon_tmp.delete();
+    }
+
+    // Se a linha temporária do primeiro polígono ainda estiver desenhada, também
+    // devemos deletá-la.
+    if (polygon_first_line != undefined) {
+        polygon_first_line.delete();
+    }
+
+    controle.polygon_tmp = undefined;
+    controle.polygon_first_line = undefined;
+}
+
+
 function main()
 {
     // Inicialização
@@ -433,24 +464,6 @@ function main()
     // Configura botões de seleção de cores
     init_cores(refs, controle);
 
-    // Função auxiliar que finaliza o desenho do polígono
-    const finaliza_polygon = () => {
-        if (controle.polygon_tmp != undefined) {
-            controle.polygon_tmp.vertices.pop();
-            controle.polygon_tmp.vertices.pop();
-
-            if (controle.polygon_tmp.vertices.length/2 < 3) {
-                controle.polygon_tmp.delete();
-            }
-            controle.polygon_tmp = undefined;
-
-            if (controle.polygon_first_line != undefined) {
-                controle.polygon_first_line.delete();
-                controle.polygon_first_line = undefined;
-            }
-        }
-    }
-
     // Botões
     refs.botoes.btn_ponto.className = "selected";
     refs.botoes.btn_ponto.onclick = () => {
@@ -458,33 +471,33 @@ function main()
         refs.botoes.btn_ponto.className = refs.botoes.btn_ponto.className == "selected" ? "" : "selected";
         refs.botoes.btn_linha.className = "";
         refs.botoes.btn_poligono.className = "";
-        finaliza_polygon();
+        finaliza_polygon(controle);
     }
     refs.botoes.btn_linha.onclick = () => {
         controle.ferramenta = "line";
         refs.botoes.btn_linha.className = refs.botoes.btn_linha.className == "selected" ? "" : "selected";
         refs.botoes.btn_ponto.className = "";
         refs.botoes.btn_poligono.className = "";
-        finaliza_polygon();
+        finaliza_polygon(controle);
     }
     refs.botoes.btn_poligono.onclick = () => {
         controle.ferramenta = "polygon";
         refs.botoes.btn_poligono.className = refs.botoes.btn_poligono.className == "selected" ? "" : "selected";
         refs.botoes.btn_ponto.className = "";
         refs.botoes.btn_linha.className = "";
-        finaliza_polygon();
+        finaliza_polygon(controle);
     }
     refs.botoes.btn_limpar.onclick = () => {
         Point.list.length = 0;
         Line.list.length = 0;
         Polygon.list.length = 0;
-        finaliza_polygon();
+        finaliza_polygon(controle);
     }
 
     // Inicia keyboard handling
     document.addEventListener ('keyup', (event) => {
         if (event.key == "Escape") {
-            finaliza_polygon();
+            finaliza_polygon(controle);
         }
     });
 
