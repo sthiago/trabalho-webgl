@@ -98,6 +98,65 @@ class Base {
     set_value() {}
 }
 
+/**
+ * Depois de implementar as três primitivas (Point, Line, e Polygon), eu vi que elas
+ * compartilham a maior parte dos atributos e uniforms, então vou criar mais uma camada
+ * de abstração aqui chamada Primitive
+ */
+class Primitive extends Base {
+    constructor() {
+        super();
+    }
+
+    /* Toda primitiva precisa de pelo menos posições (vértices) e uma cor */
+    static get_atributos() {
+        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
+        this.a_color = this.gl.getAttribLocation(this.program, "a_color");
+    }
+
+    /* Toda primimitiva precisa saber qual a resolução do canvas */
+    static get_uniforms() {
+        this.u_resolution = this.gl.getUniformLocation(this.program, "u_resolution");
+    }
+
+    /* Configura uniform da resolução */
+    static set_uniforms() {
+        const width = this.gl.canvas.width;
+        const height = this.gl.canvas.height;
+        this.gl.uniform2f(this.u_resolution, width, height);
+    }
+
+    /* Configura buffers de posição e de cor */
+    static init_vao_e_buffers() {
+        super.init_vao_e_buffers();
+
+        // a_position
+        console.assert(this.a_position != null, "atributo a_position não foi setado");
+        this.a_position_buf = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
+        this.gl.enableVertexAttribArray(this.a_position);
+        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
+
+        // a_color
+        console.assert(this.a_color != null, "atributo a_color não foi setado");
+        this.a_color_buf = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
+        this.gl.enableVertexAttribArray(this.a_color);
+        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.UNSIGNED_BYTE, true, 0, 0);
+    }
+
+    /* Toda instância de uma primitiva precisa de um método delete() (igual em todas) */
+    delete() {
+        const index = this.constructor.list.indexOf(this);
+        this.constructor.list.splice(index, 1);
+    }
+
+    /* Toda instância de uma primitiva precisa do método que seta sua cor */
+    set_color(r, g, b, a) {
+        this.color = [r, g, b, a];
+    }
+}
+
 class Point extends Base {
     static list = [];
 
