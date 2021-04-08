@@ -382,6 +382,35 @@ function init_webgl(refs) {
     return [ gl, program, rect ];
 }
 
+/** Função que inicializa os botões de seleção de cores */
+function init_cores(refs, controle) {
+    const cores_elms = refs.cores_elms;
+
+    for (const key of Object.keys(cores_elms)) {
+        const btn = cores_elms[key];
+        btn.onclick = () => {
+            // Desseleciona todos (removendo a classe css "cor-selected")
+            Object.values(cores_elms).forEach((el) => el.className = "cor");
+
+            // Seleciona o atual (que é o botão que foi clicado)
+            btn.className = "cor cor-selected";
+
+            // Seta a cor nas variáveis de controle
+            controle.cor = refs.cores[key];
+
+            // Muda a cor do polígono se ele estiver sendo desenhado
+            const polygon_tmp = controle.polygon_tmp;
+            if (polygon_tmp != undefined) {
+                polygon_tmp.set_color.apply(polygon_tmp, controle.cor);
+            }
+            const polygon_first_line = controle.polygon_first_line;
+            if (polygon_first_line != undefined) {
+                polygon_first_line.set_color.apply(polygon_first_line, controle.cor);
+            }
+        }
+    }
+}
+
 function main()
 {
     // Inicialização
@@ -400,6 +429,9 @@ function main()
         "polygon_tmp": undefined,
         "polygon_first_line": undefined,
     }
+
+    // Configura botões de seleção de cores
+    init_cores(refs, controle);
 
     // Função auxiliar que finaliza o desenho do polígono
     const finaliza_polygon = () => {
@@ -447,29 +479,6 @@ function main()
         Line.list.length = 0;
         Polygon.list.length = 0;
         finaliza_polygon();
-    }
-
-    // Seleção de cores
-    for (const key of Object.keys(cores_elms)) {
-        const btn = cores_elms[key];
-        btn.onclick = () => {
-            // Desseleciona todos
-            Object.values(cores_elms).forEach((el) => el.className = "cor");
-
-            // Seleciona o atual
-            btn.className = "cor cor-selected";
-
-            // Seta a cor
-            controle.cor = cores[key];
-
-            // Muda a cor do polígono se ele estiver sendo desenhado
-            if (controle.polygon_tmp != undefined) {
-                controle.polygon_tmp.set_color.apply(controle.polygon_tmp, controle.cor);
-            }
-            if (controle.polygon_first_line != undefined) {
-                controle.polygon_first_line.set_color.apply(controle.polygon_first_line, controle.cor);
-            }
-        }
     }
 
     // Inicia keyboard handling
