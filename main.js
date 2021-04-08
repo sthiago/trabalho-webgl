@@ -367,7 +367,6 @@ function init_webgl(refs) {
         throw Error("Sem suporte a WebGL 2.0");
     }
 
-    const rect = refs.canvas.getBoundingClientRect();
     const program = initShaders(gl, "vs", "fs");
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -379,7 +378,7 @@ function init_webgl(refs) {
     Line.init(gl, program);
     Polygon.init(gl, program);
 
-    return [ gl, program, rect ];
+    return [ gl, program ];
 }
 
 /** Função que inicializa os botões de seleção de cores */
@@ -474,10 +473,12 @@ function init_botoes(refs, controle) {
 }
 
 /** Função que inicializa o mouse handling */
-function init_mouse(refs, controle, rect) {
+function init_mouse(refs, controle) {
 
     // Movimento do mouse
     refs.canvas.onmousemove = (e) => {
+        const rect = refs.canvas.getBoundingClientRect();
+
         // O -1 é da borda de 1px
         controle.mouseX = e.clientX - rect.left - 1;
         controle.mouseY = e.clientY - rect.top - 1;
@@ -622,7 +623,7 @@ function main()
 {
     // Inicialização
     const refs = get_elementos();
-    const [ gl, program, rect ] = init_webgl(refs);
+    const [ gl, program ] = init_webgl(refs);
 
     // Variáveis de controle
     const controle = {
@@ -642,7 +643,7 @@ function main()
     init_botoes(refs, controle);
 
     // Configura mouse handling
-    init_mouse(refs, controle, rect);
+    init_mouse(refs, controle);
 
     // Configura keyboard handling
     document.addEventListener ('keyup', (event) => {
