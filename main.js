@@ -392,26 +392,29 @@ function main()
     const cores_elms = refs.cores_elms;
     const cores = refs.cores;
 
-    let ferramenta = "point";
-    let cor = cores.preto;
-    let line_tmp;
-    let polygon_tmp;
-    let polygon_first_line;
+    // Variáveis de controle
+    const controle = {
+        "ferramenta": "point",
+        "cor": cores.preto,
+        "line_tmp": undefined,
+        "polygon_tmp": undefined,
+        "polygon_first_line": undefined,
+    }
 
     // Função auxiliar que finaliza o desenho do polígono
     const finaliza_polygon = () => {
-        if (polygon_tmp != undefined) {
-            polygon_tmp.vertices.pop();
-            polygon_tmp.vertices.pop();
+        if (controle.polygon_tmp != undefined) {
+            controle.polygon_tmp.vertices.pop();
+            controle.polygon_tmp.vertices.pop();
 
-            if (polygon_tmp.vertices.length/2 < 3) {
-                polygon_tmp.delete();
+            if (controle.polygon_tmp.vertices.length/2 < 3) {
+                controle.polygon_tmp.delete();
             }
-            polygon_tmp = undefined;
+            controle.polygon_tmp = undefined;
 
-            if (polygon_first_line != undefined) {
-                polygon_first_line.delete();
-                polygon_first_line = undefined;
+            if (controle.polygon_first_line != undefined) {
+                controle.polygon_first_line.delete();
+                controle.polygon_first_line = undefined;
             }
         }
     }
@@ -419,21 +422,21 @@ function main()
     // Botões
     refs.botoes.btn_ponto.className = "selected";
     refs.botoes.btn_ponto.onclick = () => {
-        ferramenta = "point";
+        controle.ferramenta = "point";
         refs.botoes.btn_ponto.className = refs.botoes.btn_ponto.className == "selected" ? "" : "selected";
         refs.botoes.btn_linha.className = "";
         refs.botoes.btn_poligono.className = "";
         finaliza_polygon();
     }
     refs.botoes.btn_linha.onclick = () => {
-        ferramenta = "line";
+        controle.ferramenta = "line";
         refs.botoes.btn_linha.className = refs.botoes.btn_linha.className == "selected" ? "" : "selected";
         refs.botoes.btn_ponto.className = "";
         refs.botoes.btn_poligono.className = "";
         finaliza_polygon();
     }
     refs.botoes.btn_poligono.onclick = () => {
-        ferramenta = "polygon";
+        controle.ferramenta = "polygon";
         refs.botoes.btn_poligono.className = refs.botoes.btn_poligono.className == "selected" ? "" : "selected";
         refs.botoes.btn_ponto.className = "";
         refs.botoes.btn_linha.className = "";
@@ -457,14 +460,14 @@ function main()
             btn.className = "cor cor-selected";
 
             // Seta a cor
-            cor = cores[key];
+            controle.cor = cores[key];
 
             // Muda a cor do polígono se ele estiver sendo desenhado
-            if (polygon_tmp != undefined) {
-                polygon_tmp.set_color.apply(polygon_tmp, cor);
+            if (controle.polygon_tmp != undefined) {
+                controle.polygon_tmp.set_color.apply(controle.polygon_tmp, controle.cor);
             }
-            if (polygon_first_line != undefined) {
-                polygon_first_line.set_color.apply(polygon_first_line, cor);
+            if (controle.polygon_first_line != undefined) {
+                controle.polygon_first_line.set_color.apply(controle.polygon_first_line, controle.cor);
             }
         }
     }
@@ -485,18 +488,18 @@ function main()
 
         refs.mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
 
-        if (line_tmp != undefined) {
-            line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
+        if (controle.line_tmp != undefined) {
+            controle.line_tmp.set_position(controle.line_tmp.x1, controle.line_tmp.y1, mouseX, mouseY);
         }
 
-        if (polygon_tmp != undefined) {
-            polygon_tmp.vertices[polygon_tmp.vertices.length-2] = mouseX;
-            polygon_tmp.vertices[polygon_tmp.vertices.length-1] = mouseY;
+        if (controle.polygon_tmp != undefined) {
+            controle.polygon_tmp.vertices[controle.polygon_tmp.vertices.length-2] = mouseX;
+            controle.polygon_tmp.vertices[controle.polygon_tmp.vertices.length-1] = mouseY;
         }
 
-        if (polygon_first_line != undefined) {
-            polygon_first_line.set_position(
-                polygon_first_line.x1, polygon_first_line.y1, mouseX, mouseY);
+        if (controle.polygon_first_line != undefined) {
+            controle.polygon_first_line.set_position(
+                controle.polygon_first_line.x1, controle.polygon_first_line.y1, mouseX, mouseY);
         }
     }
 
@@ -507,56 +510,56 @@ function main()
 
         // Desenha um ponto
         if (
-            ferramenta == "point"
+            controle.ferramenta == "point"
             && !e.ctrlKey
         ) {
             const p = new Point(mouseX, mouseY);
-            p.set_color.apply(p, cor);
+            p.set_color.apply(p, controle.cor);
             return;
         };
 
         // Começa a desenhar um polígono
         if (
-            ferramenta == "polygon"
-            && polygon_tmp == undefined
+            controle.ferramenta == "polygon"
+            && controle.polygon_tmp == undefined
             && !e.ctrlKey
         ) {
-            polygon_tmp = new Polygon();
-            polygon_tmp.add_vertex(mouseX, mouseY);
-            polygon_tmp.add_vertex(mouseX, mouseY);
-            polygon_tmp.set_color.apply(polygon_tmp, cor);
+            controle.polygon_tmp = new Polygon();
+            controle.polygon_tmp.add_vertex(mouseX, mouseY);
+            controle.polygon_tmp.add_vertex(mouseX, mouseY);
+            controle.polygon_tmp.set_color.apply(controle.polygon_tmp, controle.cor);
 
             // Cria uma linha temporária para a primeira aresta do polígono
-            polygon_first_line = new Line(mouseX, mouseY, mouseX, mouseY);
-            polygon_first_line.set_color.apply(polygon_first_line, cor);
+            controle.polygon_first_line = new Line(mouseX, mouseY, mouseX, mouseY);
+            controle.polygon_first_line.set_color.apply(controle.polygon_first_line, controle.cor);
             return;
         }
 
         // Adiciona pontos ao polígono que está sendo desenhado
         if (
-            ferramenta == "polygon"
-            && polygon_tmp != undefined
+            controle.ferramenta == "polygon"
+            && controle.polygon_tmp != undefined
             && !e.ctrlKey
         ) {
-            polygon_tmp.add_vertex(mouseX, mouseY);
+            controle.polygon_tmp.add_vertex(mouseX, mouseY);
 
             // Deleta polygon_first_line se ela existir
-            if (polygon_first_line != undefined) {
-                polygon_first_line.delete();
-                polygon_first_line = undefined;
+            if (controle.polygon_first_line != undefined) {
+                controle.polygon_first_line.delete();
+                controle.polygon_first_line = undefined;
             }
             return;
         }
 
         // Finaliza o polígono sendo desenhado
         if (
-            ferramenta == "polygon"
-            && polygon_tmp != undefined
+            controle.ferramenta == "polygon"
+            && controle.polygon_tmp != undefined
             && e.ctrlKey
         ) {
-            polygon_tmp.add_vertex(mouseX, mouseY);
-            polygon_tmp.add_vertex(polygon_tmp.vertices[0], polygon_tmp.vertices[1]);
-            polygon_tmp = undefined;
+            controle.polygon_tmp.add_vertex(mouseX, mouseY);
+            controle.polygon_tmp.add_vertex(controle.polygon_tmp.vertices[0], controle.polygon_tmp.vertices[1]);
+            controle.polygon_tmp = undefined;
         }
     }
 
@@ -565,18 +568,18 @@ function main()
             return;
         }
 
-        if (ferramenta == "line" && line_tmp == undefined) {
-            line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
-            line_tmp.set_color.apply(line_tmp, cor);
+        if (controle.ferramenta == "line" && controle.line_tmp == undefined) {
+            controle.line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
+            controle.line_tmp.set_color.apply(controle.line_tmp, controle.cor);
         }
     }
 
     refs.canvas.onmouseup = (e) => {
-        if (ferramenta == "line" && line_tmp != undefined) {
-            if (line_tmp.x1 == line_tmp.x2 && line_tmp.y1 == line_tmp.y2) {
-                line_tmp.delete();
+        if (controle.ferramenta == "line" && controle.line_tmp != undefined) {
+            if (controle.line_tmp.x1 == controle.line_tmp.x2 && controle.line_tmp.y1 == controle.line_tmp.y2) {
+                controle.line_tmp.delete();
             }
-            line_tmp = undefined;
+            controle.line_tmp = undefined;
         }
     }
 
