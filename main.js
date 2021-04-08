@@ -285,63 +285,32 @@ class Line extends Primitive {
     }
 }
 
-class Polygon extends Base {
+class Polygon extends Primitive {
     static list = [];
-
-    static get_atributos() {
-        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
-        this.a_color = this.gl.getAttribLocation(this.program, "a_color");
-    }
-
-    static get_uniforms() {
-        this.u_resolution = this.gl.getUniformLocation(this.program, "u_resolution");
-    }
-
-    static set_uniforms() {
-        this.gl.uniform2f(
-            this.u_resolution, this.gl.canvas.width, this.gl.canvas.height);
-    }
-
-    static init_vao_e_buffers() {
-        super.init_vao_e_buffers();
-
-        // a_position
-        console.assert(this.a_position != null, "atributo a_position não foi setado");
-        this.a_position_buf = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
-        this.gl.enableVertexAttribArray(this.a_position);
-        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
-
-        // a_color
-        console.assert(this.a_color != null, "atributo a_color não foi setado");
-        this.a_color_buf = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
-        this.gl.enableVertexAttribArray(this.a_color);
-        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.UNSIGNED_BYTE, true, 0, 0);
-    }
 
     static draw(f_extra) {
         super.draw(f_extra);
 
+        // No caso dos polígonos, é preciso fazer uma chamada separada pra cada um por
+        // causa do comportamento padrão das primitivas GL (tanto TRIANGLE_FAN quanto
+        // TRIANGLE_STRIP).
         for (const p of this.list) {
             // a_position
+            const arr_position = new Float32Array(p.vertices);
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
-            this.gl.bufferData(
-                this.gl.ARRAY_BUFFER,
-                new Float32Array(p.vertices),
-                this.gl.STATIC_DRAW
-            );
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_position, this.gl.STATIC_DRAW);
 
             // a_color
             let color_data = [];
             for (let i = 0; i < p.vertices.length/2; i++) {
                 color_data = color_data.concat(p.color);
             }
+            const arr_color = new Uint8Array(color_data);
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
-            this.gl.bufferData(
-                this.gl.ARRAY_BUFFER, new Uint8Array(color_data), this.gl.STATIC_DRAW);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_color, this.gl.STATIC_DRAW);
 
-            this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, p.vertices.length/2);
+            // Desenha este polígono
+            this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, p.vertices.length/2);
         }
     }
 
@@ -356,17 +325,8 @@ class Polygon extends Base {
         this.constructor.list.push(this);
     }
 
-    delete() {
-        const index = this.constructor.list.indexOf(this);
-        this.constructor.list.splice(index, 1);
-    }
-
     add_vertex(x, y) {
         this.vertices.push(x, y);
-    }
-
-    set_color(r, g, b, a) {
-        this.color = [r, g, b, a];
     }
 }
 
