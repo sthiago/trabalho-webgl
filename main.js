@@ -157,46 +157,23 @@ class Primitive extends Base {
     }
 }
 
-class Point extends Base {
+class Point extends Primitive {
     static list = [];
 
-    static get_atributos() {
-        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
-        this.a_color = this.gl.getAttribLocation(this.program, "a_color");
-    }
-
     static get_uniforms() {
+        super.get_uniforms();
         this.u_pointsize = this.gl.getUniformLocation(this.program, "u_pointsize");
-        this.u_resolution = this.gl.getUniformLocation(this.program, "u_resolution");
     }
 
     static set_uniforms() {
-        this.gl.uniform2f(
-            this.u_resolution, this.gl.canvas.width, this.gl.canvas.height);
+        super.set_uniforms();
         this.gl.uniform1f(this.u_pointsize, 3);
-    }
-
-    static init_vao_e_buffers() {
-        super.init_vao_e_buffers();
-
-        // a_position
-        console.assert(this.a_position != null, "atributo a_position não foi setado");
-        this.a_position_buf = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
-        this.gl.enableVertexAttribArray(this.a_position);
-        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
-
-        // a_color
-        console.assert(this.a_color != null, "atributo a_color não foi setado");
-        this.a_color_buf = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
-        this.gl.enableVertexAttribArray(this.a_color);
-        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.UNSIGNED_BYTE, true, 0, 0);
     }
 
     static draw(f_extra) {
         super.draw(f_extra);
 
+        // Carrega buffer de posições com os vértices de todos os pontos
         // a_position
         const position_data = Array(2 * this.list.length);
         for (let i = 0; i < this.list.length; i++) {
@@ -204,10 +181,11 @@ class Point extends Base {
             position_data[i*2+0] = p.x;
             position_data[i*2+1] = p.y;
         }
+        const arr_position = new Float32Array(position_data);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
-        this.gl.bufferData(
-            this.gl.ARRAY_BUFFER, new Float32Array(position_data), this.gl.STATIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_position, this.gl.STATIC_DRAW);
 
+        // Carrega buffer de cores com a cor de todos os pontos
         // a_color
         const color_data = Array(4 * this.list.length);
         for (let i = 0; i < this.list.length; i++) {
@@ -217,10 +195,11 @@ class Point extends Base {
             color_data[i*4+2] = p.color[2];
             color_data[i*4+3] = p.color[3];
         }
+        const arr_color = new Uint8Array(color_data);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
-        this.gl.bufferData(
-            this.gl.ARRAY_BUFFER, new Uint8Array(color_data), this.gl.STATIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_color, this.gl.STATIC_DRAW);
 
+        // Desenha todos os pontos
         this.gl.drawArrays(this.gl.POINTS, 0, this.list.length);
     }
 
@@ -236,18 +215,9 @@ class Point extends Base {
         this.constructor.list.push(this);
     }
 
-    delete() {
-        const index = this.constructor.list.indexOf(this);
-        this.constructor.list.splice(index, 1);
-    }
-
     set_position(x, y) {
         this.x = x;
         this.y = y;
-    }
-
-    set_color(r, g, b, a) {
-        this.color = [r, g, b, a];
     }
 }
 
