@@ -334,6 +334,9 @@ function get_elementos() {
     return {
         "canvas": document.querySelector("#canvas"),
         "mouse_position_el": document.querySelector("#mouse_position"),
+        "ponto_count": document.querySelector("#ponto_count"),
+        "linha_count": document.querySelector("#linha_count"),
+        "poligono_count": document.querySelector("#poligono_count"),
         "botoes": {
             "point": document.querySelector("#btn_ponto"),
             "line": document.querySelector("#btn_linha"),
@@ -652,10 +655,10 @@ function main()
     init_mouse(refs, controle);
     init_keyboard(controle);
 
-    window.requestAnimationFrame(() => draw_scene(gl, program));
+    window.requestAnimationFrame(() => draw_scene(gl, program, refs));
 }
 
-function draw_scene(gl, program) {
+function draw_scene(gl, program, refs) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // Desenha todos os polígonos, linhas, e pontos
@@ -663,15 +666,11 @@ function draw_scene(gl, program) {
     Line.draw();
     Point.draw();
 
-    const ponto_count = document.querySelector("#ponto_count");
-    const linha_count = document.querySelector("#linha_count");
-    const poligono_count = document.querySelector("#poligono_count");
+    refs.ponto_count.textContent = `Pontos: ${Point.list.length}`;
+    refs.linha_count.textContent = `Linhas: ${Line.list.length}`;
+    refs.poligono_count.textContent = `Polígonos: ${Polygon.list.length}`;
 
-    ponto_count.textContent = `Pontos: ${Point.list.length}`;
-    linha_count.textContent = `Linhas: ${Line.list.length}`;
-    poligono_count.textContent = `Polígonos: ${Polygon.list.length}`;
-
-    window.requestAnimationFrame(() => draw_scene(gl, program));
+    window.requestAnimationFrame(() => draw_scene(gl, program, refs));
 }
 
 window.onload = main;
