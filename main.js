@@ -335,11 +335,11 @@ function get_elementos() {
         "canvas": document.querySelector("#canvas"),
         "mouse_position_el": document.querySelector("#mouse_position"),
         "botoes": {
-            "btn_ponto": document.querySelector("#btn_ponto"),
-            "btn_linha": document.querySelector("#btn_linha"),
-            "btn_poligono": document.querySelector("#btn_poligono"),
-            "btn_limpar": document.querySelector("#btn_limpar"),
+            "point": document.querySelector("#btn_ponto"),
+            "line": document.querySelector("#btn_linha"),
+            "polygon": document.querySelector("#btn_poligono"),
         },
+        "btn_limpar": document.querySelector("#btn_limpar"),
         "cores_elms": {
             'vermelho' : document.querySelector("#cor_vermelho"),
             'amarelo'  : document.querySelector("#cor_amarelo"),
@@ -441,6 +441,37 @@ function finaliza_polygon(controle) {
     controle.polygon_first_line = undefined;
 }
 
+/** Função que inicializa os botões de ferramenta */
+function init_botoes(refs, controle) {
+    const botoes = refs.botoes;
+
+    // Configuração dos botões de primitivas
+    for (const key of Object.keys(botoes)) {
+        const btn = botoes[key];
+
+        btn.onclick = () => {
+            // Desseleciona todos os botões
+            Object.values(botoes).forEach((el) => el.className = "");
+
+            // Seleciona o atual (botão que foi clicado)
+            btn.className = "selected";
+
+            // Seta a ferramenta
+            controle.ferramenta = key;
+
+            // Finaliza polígono, caso exista
+            finaliza_polygon(controle);
+        }
+    }
+
+    // Configuração do botão de limpar
+    refs.btn_limpar.onclick = () => {
+        Point.list.length = 0;
+        Line.list.length = 0;
+        Polygon.list.length = 0;
+        finaliza_polygon(controle);
+    }
+}
 
 function main()
 {
@@ -464,35 +495,9 @@ function main()
     // Configura botões de seleção de cores
     init_cores(refs, controle);
 
-    // Botões
-    refs.botoes.btn_ponto.className = "selected";
-    refs.botoes.btn_ponto.onclick = () => {
-        controle.ferramenta = "point";
-        refs.botoes.btn_ponto.className = refs.botoes.btn_ponto.className == "selected" ? "" : "selected";
-        refs.botoes.btn_linha.className = "";
-        refs.botoes.btn_poligono.className = "";
-        finaliza_polygon(controle);
-    }
-    refs.botoes.btn_linha.onclick = () => {
-        controle.ferramenta = "line";
-        refs.botoes.btn_linha.className = refs.botoes.btn_linha.className == "selected" ? "" : "selected";
-        refs.botoes.btn_ponto.className = "";
-        refs.botoes.btn_poligono.className = "";
-        finaliza_polygon(controle);
-    }
-    refs.botoes.btn_poligono.onclick = () => {
-        controle.ferramenta = "polygon";
-        refs.botoes.btn_poligono.className = refs.botoes.btn_poligono.className == "selected" ? "" : "selected";
-        refs.botoes.btn_ponto.className = "";
-        refs.botoes.btn_linha.className = "";
-        finaliza_polygon(controle);
-    }
-    refs.botoes.btn_limpar.onclick = () => {
-        Point.list.length = 0;
-        Line.list.length = 0;
-        Polygon.list.length = 0;
-        finaliza_polygon(controle);
-    }
+    // Configura botões de ferramentas
+    init_botoes(refs, controle);
+
 
     // Inicia keyboard handling
     document.addEventListener ('keyup', (event) => {
