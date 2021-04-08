@@ -341,26 +341,29 @@ function get_elementos() {
     }
 }
 
-function main()
-{
-    // Carrega as referências dos elementos DOM necessárias
-    const refs = get_elementos();
-
-    // Cria e configura gl
-    const canvas = refs.canvas;
-    const rect = canvas.getBoundingClientRect();
-    const gl = canvas.getContext("webgl2");
+/** Função de inicialização do WebGL (gl, program, etc) */
+function init_webgl(refs) {
+    const gl = refs.canvas.getContext("webgl2");
     if (!gl) {
         alert("Sem suporte a WebGL 2.0");
-        return;
+        throw Error("Sem suporte a WebGL 2.0");
     }
+
+    const rect = refs.canvas.getBoundingClientRect();
+    const program = initShaders(gl, "vs", "fs");
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(1, 1, 1, 1);
     gl.lineWidth(3);
 
-    // Compila programa a partir do código dos vertex e fragment shaders
-    const program = initShaders(gl, "vs", "fs");
+    return [ gl, program, rect ];
+}
+
+function main()
+{
+    // Inicialização
+    const refs = get_elementos();
+    const [ gl, program, rect ] = init_webgl(refs);
 
     // Configura classes primitivas
     Point.init(gl, program);
@@ -583,6 +586,7 @@ function main()
 function draw_scene(gl, program) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    // Desenha todos os polígonos, linhas, e pontos
     Polygon.draw();
     Line.draw();
     Point.draw();
