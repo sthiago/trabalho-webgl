@@ -329,10 +329,25 @@ function randrange(min, max) {
     return Math.random() * (max - min) + min;
 }
 
+/** Função que retorna um dicionário com todos os elementos DOM necessários */
+function get_elementos() {
+    return {
+        "canvas": document.querySelector("#canvas"),
+        "mouse_position_el": document.querySelector("#mouse_position"),
+        "btn_ponto": document.querySelector("#btn_ponto"),
+        "btn_linha": document.querySelector("#btn_linha"),
+        "btn_poligono": document.querySelector("#btn_poligono"),
+        "btn_limpar": document.querySelector("#btn_limpar"),
+    }
+}
+
 function main()
 {
+    // Carrega as referências dos elementos DOM necessárias
+    const refs = get_elementos();
+
     // Cria e configura gl
-    const canvas = document.querySelector("#canvas");
+    const canvas = refs.canvas;
     const rect = canvas.getBoundingClientRect();
     const gl = canvas.getContext("webgl2");
     if (!gl) {
@@ -352,11 +367,6 @@ function main()
     Polygon.init(gl, program);
 
     // Pega referência de elementos
-    const mouse_position_el = document.querySelector("#mouse_position");
-    const btn_ponto = document.querySelector("#btn_ponto");
-    const btn_linha = document.querySelector("#btn_linha");
-    const btn_poligono = document.querySelector("#btn_poligono");
-    const btn_limpar = document.querySelector("#btn_limpar");
     const cores_elms = {
         'vermelho' : document.querySelector("#cor_vermelho"),
         'amarelo'  : document.querySelector("#cor_amarelo"),
@@ -401,29 +411,29 @@ function main()
     }
 
     // Botões
-    btn_ponto.className = "selected";
-    btn_ponto.onclick = () => {
+    refs.btn_ponto.className = "selected";
+    refs.btn_ponto.onclick = () => {
         ferramenta = "point";
-        btn_ponto.className = btn_ponto.className == "selected" ? "" : "selected";
-        btn_linha.className = "";
-        btn_poligono.className = "";
+        refs.btn_ponto.className = refs.btn_ponto.className == "selected" ? "" : "selected";
+        refs.btn_linha.className = "";
+        refs.btn_poligono.className = "";
         finaliza_polygon();
     }
-    btn_linha.onclick = () => {
+    refs.btn_linha.onclick = () => {
         ferramenta = "line";
-        btn_linha.className = btn_linha.className == "selected" ? "" : "selected";
-        btn_ponto.className = "";
-        btn_poligono.className = "";
+        refs.btn_linha.className = refs.btn_linha.className == "selected" ? "" : "selected";
+        refs.btn_ponto.className = "";
+        refs.btn_poligono.className = "";
         finaliza_polygon();
     }
-    btn_poligono.onclick = () => {
+    refs.btn_poligono.onclick = () => {
         ferramenta = "polygon";
-        btn_poligono.className = btn_poligono.className == "selected" ? "" : "selected";
-        btn_ponto.className = "";
-        btn_linha.className = "";
+        refs.btn_poligono.className = refs.btn_poligono.className == "selected" ? "" : "selected";
+        refs.btn_ponto.className = "";
+        refs.btn_linha.className = "";
         finaliza_polygon();
     }
-    btn_limpar.onclick = () => {
+    refs.btn_limpar.onclick = () => {
         Point.list.length = 0;
         Line.list.length = 0;
         Polygon.list.length = 0;
@@ -467,7 +477,7 @@ function main()
         mouseX = e.clientX - rect.left - 1;
         mouseY = e.clientY - rect.top - 1;
 
-        mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
+        refs.mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
 
         if (line_tmp != undefined) {
             line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
