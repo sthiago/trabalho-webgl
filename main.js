@@ -619,6 +619,16 @@ function init_mouse(refs, controle) {
     refs.canvas.onmouseleave = refs.canvas.onmouseup;
 }
 
+/** Função que inicializa keyboard handling */
+function init_keyboard(controle) {
+    document.addEventListener ('keyup', (event) => {
+        // Finaliza polígono pressionando ESC
+        if (event.key == "Escape") {
+            finaliza_polygon(controle);
+        }
+    });
+}
+
 function main()
 {
     // Inicialização
@@ -636,22 +646,11 @@ function main()
         "mouseY": undefined,
     }
 
-    // Configura botões de seleção de cores
+    // Inicializa e configura funcionalidades
     init_cores(refs, controle);
-
-    // Configura botões de ferramentas
     init_botoes(refs, controle);
-
-    // Configura mouse handling
     init_mouse(refs, controle);
-
-    // Configura keyboard handling
-    document.addEventListener ('keyup', (event) => {
-        // Finaliza polígono pressionando ESC
-        if (event.key == "Escape") {
-            finaliza_polygon(controle);
-        }
-    });
+    init_keyboard(controle);
 
     window.requestAnimationFrame(() => draw_scene(gl, program));
 }
