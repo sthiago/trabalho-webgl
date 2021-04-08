@@ -329,15 +329,33 @@ function randrange(min, max) {
     return Math.random() * (max - min) + min;
 }
 
-/** Função que retorna um dicionário com todos os elementos DOM necessários */
+/** Função que retorna um dicionário com elementos DOM necessários e outras coisas */
 function get_elementos() {
     return {
         "canvas": document.querySelector("#canvas"),
         "mouse_position_el": document.querySelector("#mouse_position"),
-        "btn_ponto": document.querySelector("#btn_ponto"),
-        "btn_linha": document.querySelector("#btn_linha"),
-        "btn_poligono": document.querySelector("#btn_poligono"),
-        "btn_limpar": document.querySelector("#btn_limpar"),
+        "botoes": {
+            "btn_ponto": document.querySelector("#btn_ponto"),
+            "btn_linha": document.querySelector("#btn_linha"),
+            "btn_poligono": document.querySelector("#btn_poligono"),
+            "btn_limpar": document.querySelector("#btn_limpar"),
+        },
+        "cores_elms": {
+            'vermelho' : document.querySelector("#cor_vermelho"),
+            'amarelo'  : document.querySelector("#cor_amarelo"),
+            'verde'    : document.querySelector("#cor_verde"),
+            'azul'     : document.querySelector("#cor_azul"),
+            'roxo'     : document.querySelector("#cor_roxo"),
+            'preto'    : document.querySelector("#cor_preto"),
+        },
+        "cores": {
+            'vermelho' : [255, 89, 94, 255],
+            'amarelo'  : [255, 202, 58, 255],
+            'verde'    : [138, 201, 38, 255],
+            'azul'     : [25, 130, 196, 255],
+            'roxo'     : [106, 76, 147, 255],
+            'preto'    : [0, 0, 0, 255],
+        }
     }
 }
 
@@ -356,6 +374,11 @@ function init_webgl(refs) {
     gl.clearColor(1, 1, 1, 1);
     gl.lineWidth(3);
 
+    // Inicializa classes primitivas
+    Point.init(gl, program);
+    Line.init(gl, program);
+    Polygon.init(gl, program);
+
     return [ gl, program, rect ];
 }
 
@@ -365,31 +388,10 @@ function main()
     const refs = get_elementos();
     const [ gl, program, rect ] = init_webgl(refs);
 
-    // Configura classes primitivas
-    Point.init(gl, program);
-    Line.init(gl, program);
-    Polygon.init(gl, program);
+    // Referências temporárias
+    const cores_elms = refs.cores_elms;
+    const cores = refs.cores;
 
-    // Pega referência de elementos
-    const cores_elms = {
-        'vermelho' : document.querySelector("#cor_vermelho"),
-        'amarelo'  : document.querySelector("#cor_amarelo"),
-        'verde'    : document.querySelector("#cor_verde"),
-        'azul'     : document.querySelector("#cor_azul"),
-        'roxo'     : document.querySelector("#cor_roxo"),
-        'preto'    : document.querySelector("#cor_preto"),
-    }
-    const cores = {
-        'vermelho' : [255, 89, 94, 255],
-        'amarelo'  : [255, 202, 58, 255],
-        'verde'    : [138, 201, 38, 255],
-        'azul'     : [25, 130, 196, 255],
-        'roxo'     : [106, 76, 147, 255],
-        'preto'    : [0, 0, 0, 255],
-    }
-
-
-    // Variáveis de controle
     let ferramenta = "point";
     let cor = cores.preto;
     let line_tmp;
@@ -415,29 +417,29 @@ function main()
     }
 
     // Botões
-    refs.btn_ponto.className = "selected";
-    refs.btn_ponto.onclick = () => {
+    refs.botoes.btn_ponto.className = "selected";
+    refs.botoes.btn_ponto.onclick = () => {
         ferramenta = "point";
-        refs.btn_ponto.className = refs.btn_ponto.className == "selected" ? "" : "selected";
-        refs.btn_linha.className = "";
-        refs.btn_poligono.className = "";
+        refs.botoes.btn_ponto.className = refs.botoes.btn_ponto.className == "selected" ? "" : "selected";
+        refs.botoes.btn_linha.className = "";
+        refs.botoes.btn_poligono.className = "";
         finaliza_polygon();
     }
-    refs.btn_linha.onclick = () => {
+    refs.botoes.btn_linha.onclick = () => {
         ferramenta = "line";
-        refs.btn_linha.className = refs.btn_linha.className == "selected" ? "" : "selected";
-        refs.btn_ponto.className = "";
-        refs.btn_poligono.className = "";
+        refs.botoes.btn_linha.className = refs.botoes.btn_linha.className == "selected" ? "" : "selected";
+        refs.botoes.btn_ponto.className = "";
+        refs.botoes.btn_poligono.className = "";
         finaliza_polygon();
     }
-    refs.btn_poligono.onclick = () => {
+    refs.botoes.btn_poligono.onclick = () => {
         ferramenta = "polygon";
-        refs.btn_poligono.className = refs.btn_poligono.className == "selected" ? "" : "selected";
-        refs.btn_ponto.className = "";
-        refs.btn_linha.className = "";
+        refs.botoes.btn_poligono.className = refs.botoes.btn_poligono.className == "selected" ? "" : "selected";
+        refs.botoes.btn_ponto.className = "";
+        refs.botoes.btn_linha.className = "";
         finaliza_polygon();
     }
-    refs.btn_limpar.onclick = () => {
+    refs.botoes.btn_limpar.onclick = () => {
         Point.list.length = 0;
         Line.list.length = 0;
         Polygon.list.length = 0;
@@ -476,7 +478,7 @@ function main()
 
     // Inicializa mouse handling
     let mouseX, mouseY;
-    canvas.onmousemove = (e) => {
+    refs.canvas.onmousemove = (e) => {
         // O -1 é da borda de 1px
         mouseX = e.clientX - rect.left - 1;
         mouseY = e.clientY - rect.top - 1;
@@ -498,7 +500,7 @@ function main()
         }
     }
 
-    canvas.onclick = (e) => {
+    refs.canvas.onclick = (e) => {
         if (e.shiftKey) {
             return;
         }
@@ -558,7 +560,7 @@ function main()
         }
     }
 
-    canvas.onmousedown = (e) => {
+    refs.canvas.onmousedown = (e) => {
         if (e.ctrlKey || e.shiftKey) {
             return;
         }
@@ -569,7 +571,7 @@ function main()
         }
     }
 
-    canvas.onmouseup = (e) => {
+    refs.canvas.onmouseup = (e) => {
         if (ferramenta == "line" && line_tmp != undefined) {
             if (line_tmp.x1 == line_tmp.x2 && line_tmp.y1 == line_tmp.y2) {
                 line_tmp.delete();
@@ -578,7 +580,7 @@ function main()
         }
     }
 
-    canvas.onmouseleave = canvas.onmouseup;
+    refs.canvas.onmouseleave = refs.canvas.onmouseup;
 
     window.requestAnimationFrame(() => draw_scene(gl, program));
 }
