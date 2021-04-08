@@ -221,44 +221,13 @@ class Point extends Primitive {
     }
 }
 
-class Line extends Base {
+class Line extends Primitive {
     static list = [];
-
-    static get_atributos() {
-        this.a_position = this.gl.getAttribLocation(this.program, "a_position");
-        this.a_color = this.gl.getAttribLocation(this.program, "a_color");
-    }
-
-    static get_uniforms() {
-        this.u_resolution = this.gl.getUniformLocation(this.program, "u_resolution");
-    }
-
-    static set_uniforms() {
-        this.gl.uniform2f(
-            this.u_resolution, this.gl.canvas.width, this.gl.canvas.height);
-    }
-
-    static init_vao_e_buffers() {
-        super.init_vao_e_buffers();
-
-        // a_position
-        console.assert(this.a_position != null, "atributo a_position não foi setado");
-        this.a_position_buf = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
-        this.gl.enableVertexAttribArray(this.a_position);
-        this.gl.vertexAttribPointer(this.a_position, 2, this.gl.FLOAT, false, 0, 0);
-
-        // a_color
-        console.assert(this.a_color != null, "atributo a_color não foi setado");
-        this.a_color_buf = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
-        this.gl.enableVertexAttribArray(this.a_color);
-        this.gl.vertexAttribPointer(this.a_color, 4, this.gl.UNSIGNED_BYTE, true, 0, 0);
-    }
 
     static draw(f_extra) {
         super.draw(f_extra);
 
+        // Carrega o buffer de posições com os vértices de todas as linhas
         // a_position
         const position_data = Array(2 * 2 * this.list.length);
         for (let i = 0; i < this.list.length; i++) {
@@ -268,10 +237,11 @@ class Line extends Base {
             position_data[i*4+2] = l.x2;
             position_data[i*4+3] = l.y2;
         }
+        const arr_position = new Float32Array(position_data);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
-        this.gl.bufferData(
-            this.gl.ARRAY_BUFFER, new Float32Array(position_data), this.gl.STATIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_position, this.gl.STATIC_DRAW);
 
+        // Carrega o buffer de cores com as cores de todas as linhas
         // a_color
         const color_data = Array(2 * 4 * this.list.length);
         for (let i = 0; i < this.list.length; i++) {
@@ -285,10 +255,11 @@ class Line extends Base {
             color_data[i*8+6] = p.color[2];
             color_data[i*8+7] = p.color[3];
         }
+        const arr_color = new Uint8Array(color_data);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
-        this.gl.bufferData(
-            this.gl.ARRAY_BUFFER, new Uint8Array(color_data), this.gl.STATIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_color, this.gl.STATIC_DRAW);
 
+        // Desenha todos as linhas
         this.gl.drawArrays(this.gl.LINES, 0, 2 * this.list.length);
     }
 
@@ -306,20 +277,11 @@ class Line extends Base {
         this.constructor.list.push(this);
     }
 
-    delete() {
-        const index = this.constructor.list.indexOf(this);
-        this.constructor.list.splice(index, 1);
-    }
-
     set_position(x1, y1, x2, y2) {
         this.x1 = x1;
         this.y1 = y1;
         this.x2 = x2;
         this.y2 = y2;
-    }
-
-    set_color(r, g, b, a) {
-        this.color = [r, g, b, a];
     }
 }
 
