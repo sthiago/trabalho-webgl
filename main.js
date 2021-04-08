@@ -106,6 +106,9 @@ class Base {
 class Primitive extends Base {
     constructor() {
         super();
+
+        // Cor padrão = preto
+        this.color = [0, 0, 0, 255];
     }
 
     /* Toda primitiva precisa de pelo menos posições (vértices) e uma cor */
@@ -209,9 +212,6 @@ class Point extends Primitive {
         this.x = x;
         this.y = y;
 
-        // Cor padrão = preto
-        this.color = [0, 0, 0, 255];
-
         this.constructor.list.push(this);
     }
 
@@ -271,9 +271,6 @@ class Line extends Primitive {
         this.x2 = x2;
         this.y2 = y2;
 
-        // Cor padrão = preto
-        this.color = [0, 0, 0, 255];
-
         this.constructor.list.push(this);
     }
 
@@ -318,9 +315,6 @@ class Polygon extends Primitive {
         super();
 
         this.vertices = [];
-
-        // Cor padrão = preto
-        this.color = [0, 0, 0, 255];
 
         this.constructor.list.push(this);
     }
