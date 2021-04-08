@@ -473,6 +473,151 @@ function init_botoes(refs, controle) {
     }
 }
 
+/** Função que inicializa o mouse handling */
+function init_mouse(refs, controle, rect) {
+
+    // Movimento do mouse
+    refs.canvas.onmousemove = (e) => {
+        // O -1 é da borda de 1px
+        controle.mouseX = e.clientX - rect.left - 1;
+        controle.mouseY = e.clientY - rect.top - 1;
+
+        const mouseX = controle.mouseX;
+        const mouseY = controle.mouseY;
+
+        // Atualiza texto da posição do mouse
+        refs.mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
+
+        // Efeito de rubber band -- atualiza posição do último vértice da linha/polígono
+        const line_tmp = controle.line_tmp;
+        const polygon_tmp = controle.polygon_tmp;
+        const polygon_first_line = controle.polygon_first_line;
+        if (line_tmp != undefined) {
+            line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
+        }
+        if (polygon_tmp != undefined) {
+            polygon_tmp.vertices[polygon_tmp.vertices.length-2] = mouseX;
+            polygon_tmp.vertices[polygon_tmp.vertices.length-1] = mouseY;
+        }
+        if (polygon_first_line != undefined) {
+            polygon_first_line.set_position(
+                polygon_first_line.x1, polygon_first_line.y1, mouseX, mouseY);
+        }
+    }
+
+    // Clique do mouse (principais funcionalidades de desenho)
+    refs.canvas.onclick = (e) => {
+        // Não faz nada se o shift estiver pressionado
+        if (e.shiftKey) { return; }
+
+        const mouseX = controle.mouseX;
+        const mouseY = controle.mouseY;
+        const cor = controle.cor;
+
+        // Desenha um ponto
+        if (
+            controle.ferramenta == "point"
+            && !e.ctrlKey
+        ) {
+            const p = new Point(mouseX, mouseY);
+            p.set_color.apply(p, cor);
+            return;
+        };
+
+        // Começa a desenhar um polígono
+        if (
+            controle.ferramenta == "polygon"
+            && controle.polygon_tmp == undefined
+            && !e.ctrlKey
+        ) {
+            // Cria um polígono
+            const polygon_tmp = controle.polygon_tmp = new Polygon();
+            polygon_tmp.add_vertex(mouseX, mouseY);
+            polygon_tmp.add_vertex(mouseX, mouseY);
+            polygon_tmp.set_color.apply(polygon_tmp, cor);
+
+            // Cria uma linha temporária para a primeira aresta do polígono
+            controle.polygon_first_line = new Line(mouseX, mouseY, mouseX, mouseY);
+            controle.polygon_first_line.set_color.apply(controle.polygon_first_line, cor);
+            return;
+        }
+
+        // Adiciona pontos ao polígono que está sendo desenhado
+        if (
+            controle.ferramenta == "polygon"
+            && controle.polygon_tmp != undefined
+            && !e.ctrlKey
+        ) {
+            // Adiciona vértice
+            const polygon_tmp = controle.polygon_tmp;
+            polygon_tmp.add_vertex(mouseX, mouseY);
+
+            // Deleta polygon_first_line se ela existir
+            if (controle.polygon_first_line != undefined) {
+                controle.polygon_first_line.delete();
+                controle.polygon_first_line = undefined;
+            }
+            return;
+        }
+
+        // Finaliza o polígono sendo desenhado se o usuário clicar segurando ctrl
+        // (Adiciona o vértice e depois finaliza, diferente de apertar ESC)
+        if (
+            controle.ferramenta == "polygon"
+            && controle.polygon_tmp != undefined
+            && e.ctrlKey
+        ) {
+            const polygon_tmp = controle.polygon_tmp;
+            polygon_tmp.add_vertex(mouseX, mouseY);
+            polygon_tmp.add_vertex(polygon_tmp.vertices[0], polygon_tmp.vertices[1]);
+            controle.polygon_tmp = undefined;
+        }
+    }
+
+    // Clicar e arrastar o mouse (para desenho de linhas)
+    refs.canvas.onmousedown = (e) => {
+        // Não faz nada com ctrl nem shift
+        if (e.ctrlKey || e.shiftKey) { return; }
+
+        const mouseX = controle.mouseX;
+        const mouseY = controle.mouseY;
+
+        // Desenha linha
+        if (
+            controle.ferramenta == "line"
+            && controle.line_tmp == undefined
+        ) {
+            controle.line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
+            controle.line_tmp.set_color.apply(controle.line_tmp, controle.cor);
+            return;
+        }
+    }
+
+    // Soltar o mouse (para desenho de linha)
+    refs.canvas.onmouseup = (e) => {
+        if (
+            controle.ferramenta == "line"
+            && controle.line_tmp != undefined
+        ) {
+            const line_tmp = controle.line_tmp;
+            // Deleta a linha se as 2 extremidades forem coincidentes (o usuário apenas
+            // clicou em vez de segurar a arrastar o mouse)
+            if (line_tmp.x1 == line_tmp.x2 && line_tmp.y1 == line_tmp.y2) {
+                line_tmp.delete();
+            }
+
+            // "Comita" a linha. Remove a referência da linha temporária de trabalho,
+            // mas a instância dela ainda está na lista linhas (Line.list)
+            controle.line_tmp = undefined;
+
+            return;
+        }
+    }
+
+    // Considera que o botão do mouse foi solto ao sair do canvas
+    refs.canvas.onmouseleave = refs.canvas.onmouseup;
+}
+
 function main()
 {
     // Inicialização
@@ -496,126 +641,16 @@ function main()
     // Configura botões de ferramentas
     init_botoes(refs, controle);
 
+    // Configura mouse handling
+    init_mouse(refs, controle, rect);
 
-    // Inicia keyboard handling
+    // Configura keyboard handling
     document.addEventListener ('keyup', (event) => {
+        // Finaliza polígono pressionando ESC
         if (event.key == "Escape") {
             finaliza_polygon(controle);
         }
     });
-
-    // Inicializa mouse handling
-    // let mouseX, mouseY;
-    refs.canvas.onmousemove = (e) => {
-        // O -1 é da borda de 1px
-        controle.mouseX = e.clientX - rect.left - 1;
-        controle.mouseY = e.clientY - rect.top - 1;
-
-        const mouseX = controle.mouseX;
-        const mouseY = controle.mouseY;
-
-        refs.mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
-
-        const line_tmp = controle.line_tmp;
-        const polygon_tmp = controle.polygon_tmp;
-        const polygon_first_line = controle.polygon_first_line;
-
-        if (line_tmp != undefined) {
-            line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
-        }
-
-        if (polygon_tmp != undefined) {
-            polygon_tmp.vertices[polygon_tmp.vertices.length-2] = mouseX;
-            polygon_tmp.vertices[polygon_tmp.vertices.length-1] = mouseY;
-        }
-
-        if (polygon_first_line != undefined) {
-            polygon_first_line.set_position(
-                polygon_first_line.x1, polygon_first_line.y1, mouseX, mouseY);
-        }
-    }
-
-    refs.canvas.onclick = (e) => {
-        if (e.shiftKey) {
-            return;
-        }
-
-        // Desenha um ponto
-        if (
-            controle.ferramenta == "point"
-            && !e.ctrlKey
-        ) {
-            const p = new Point(controle.mouseX, controle.mouseY);
-            p.set_color.apply(p, controle.cor);
-            return;
-        };
-
-        // Começa a desenhar um polígono
-        if (
-            controle.ferramenta == "polygon"
-            && controle.polygon_tmp == undefined
-            && !e.ctrlKey
-        ) {
-            controle.polygon_tmp = new Polygon();
-            controle.polygon_tmp.add_vertex(controle.mouseX, controle.mouseY);
-            controle.polygon_tmp.add_vertex(controle.mouseX, controle.mouseY);
-            controle.polygon_tmp.set_color.apply(controle.polygon_tmp, controle.cor);
-
-            // Cria uma linha temporária para a primeira aresta do polígono
-            controle.polygon_first_line = new Line(controle.mouseX, controle.mouseY, controle.mouseX, controle.mouseY);
-            controle.polygon_first_line.set_color.apply(controle.polygon_first_line, controle.cor);
-            return;
-        }
-
-        // Adiciona pontos ao polígono que está sendo desenhado
-        if (
-            controle.ferramenta == "polygon"
-            && controle.polygon_tmp != undefined
-            && !e.ctrlKey
-        ) {
-            controle.polygon_tmp.add_vertex(controle.mouseX, controle.mouseY);
-
-            // Deleta polygon_first_line se ela existir
-            if (controle.polygon_first_line != undefined) {
-                controle.polygon_first_line.delete();
-                controle.polygon_first_line = undefined;
-            }
-            return;
-        }
-
-        // Finaliza o polígono sendo desenhado
-        if (
-            controle.ferramenta == "polygon"
-            && controle.polygon_tmp != undefined
-            && e.ctrlKey
-        ) {
-            controle.polygon_tmp.add_vertex(controle.mouseX, controle.mouseY);
-            controle.polygon_tmp.add_vertex(controle.polygon_tmp.vertices[0], controle.polygon_tmp.vertices[1]);
-            controle.polygon_tmp = undefined;
-        }
-    }
-
-    refs.canvas.onmousedown = (e) => {
-        if (e.ctrlKey || e.shiftKey) {
-            return;
-        }
-
-        if (controle.ferramenta == "line" && controle.line_tmp == undefined) {
-            controle.line_tmp = new Line(controle.mouseX, controle.mouseY, controle.mouseX, controle.mouseY);
-            controle.line_tmp.set_color.apply(controle.line_tmp, controle.cor);
-        }
-    }
-
-    refs.canvas.onmouseup = (e) => {
-        if (controle.ferramenta == "line" && controle.line_tmp != undefined) {
-            if (controle.line_tmp.x1 == controle.line_tmp.x2 && controle.line_tmp.y1 == controle.line_tmp.y2) {
-                controle.line_tmp.delete();
-            }
-            controle.line_tmp = undefined;
-        }
-    }
-
-    refs.canvas.onmouseleave = refs.canvas.onmouseup;
 
     window.requestAnimationFrame(() => draw_scene(gl, program));
 }
