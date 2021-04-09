@@ -352,10 +352,20 @@ class Box {
             new Line(xc-aresta/2, yc+aresta/2, xc+aresta/2, yc+aresta/2),
             new Line(xc+aresta/2, yc+aresta/2, xc+aresta/2, yc-aresta/2),
             new Line(xc+aresta/2, yc-aresta/2, xc-aresta/2, yc-aresta/2),
-        ]
+        ];
 
+        this.set_claro();
+    }
+
+    set_claro() {
         for (const l of this.lines) {
-            l.set_color(140, 140, 140, 255);
+            l.set_color(140, 140, 140, 200);
+        }
+    }
+
+    set_escuro() {
+        for (const l of this.lines) {
+            l.set_color(120, 120, 120, 255);
         }
     }
 
@@ -655,6 +665,11 @@ function init_mouse(refs, controle) {
             controle.line_tmp.set_color.apply(controle.line_tmp, controle.cor);
             return;
         }
+
+        // Escurece a hoverbox pra indicar o clique
+        if (controle.ferramenta == "select" && controle.hoverbox != undefined) {
+            controle.hoverbox.set_escuro();
+        }
     }
 
     // Soltar o mouse (para desenho de linha)
@@ -675,6 +690,11 @@ function init_mouse(refs, controle) {
             controle.line_tmp = undefined;
 
             return;
+        }
+
+        // Clareia a hoverbox pra indicar que soltou o mouse
+        if (controle.ferramenta == "select" && controle.hoverbox != undefined) {
+            controle.hoverbox.set_claro();
         }
     }
 
