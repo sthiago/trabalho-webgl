@@ -324,11 +324,6 @@ class Polygon extends Primitive {
     }
 }
 
-/** Função utilitária para gerar um número (float) entre min e max */
-function randrange(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
 /** Função que retorna um dicionário com elementos DOM necessários e outras coisas */
 function get_elementos() {
     return {
