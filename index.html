@@ -12,6 +12,12 @@
             box-sizing: border-box;
         }
 
+        .clearfix:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
         body {
             background-color:ghostwhite;
             font-family: 'DejaVu Serif', serif;
@@ -38,6 +44,10 @@
         #info {
             float: left;
             padding: 10px;
+        }
+
+        #msg {
+            margin: 10px;
         }
 
         .cor {
@@ -124,6 +134,8 @@
         <button id="btn_poligono">Polígono</button>
         <button id="btn_limpar">Limpar</button>
     </div>
+    <div class="clearfix"></div>
+    <div id="msg"></div>
 
     <script src="initShaders.js"></script>
     <script src="main.js"></script>

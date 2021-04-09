@@ -337,6 +337,7 @@ function get_elementos() {
         "ponto_count": document.querySelector("#ponto_count"),
         "linha_count": document.querySelector("#linha_count"),
         "poligono_count": document.querySelector("#poligono_count"),
+        "msg": document.querySelector("#msg"),
         "botoes": {
             "point": document.querySelector("#btn_ponto"),
             "line": document.querySelector("#btn_linha"),
@@ -414,7 +415,7 @@ function init_cores(refs, controle) {
 }
 
 /** Função que finaliza/interrompe o desenho de um polígono */
-function finaliza_polygon(controle) {
+function finaliza_polygon(refs, controle) {
     const polygon_tmp = controle.polygon_tmp;
     const polygon_first_line = controle.polygon_first_line;
 
@@ -439,6 +440,10 @@ function finaliza_polygon(controle) {
         polygon_first_line.delete();
     }
 
+    // Limpa mensagem de status
+    refs.msg.textContent = "";
+
+    // Remove objetos temporários
     controle.polygon_tmp = undefined;
     controle.polygon_first_line = undefined;
 }
@@ -462,7 +467,7 @@ function init_botoes(refs, controle) {
             controle.ferramenta = key;
 
             // Finaliza polígono, caso exista
-            finaliza_polygon(controle);
+            finaliza_polygon(refs, controle);
         }
     }
 
@@ -471,7 +476,7 @@ function init_botoes(refs, controle) {
         Point.list.length = 0;
         Line.list.length = 0;
         Polygon.list.length = 0;
-        finaliza_polygon(controle);
+        finaliza_polygon(refs, controle);
     }
 }
 
@@ -543,6 +548,10 @@ function init_mouse(refs, controle) {
             // Cria uma linha temporária para a primeira aresta do polígono
             controle.polygon_first_line = new Line(mouseX, mouseY, mouseX, mouseY);
             controle.polygon_first_line.set_color.apply(controle.polygon_first_line, cor);
+
+            // Atualiza mensagem de status
+            refs.msg.textContent = "Aperte ESC para finalizar o polígono ou \
+                Ctrl+Clique para adicionar um último ponto";
             return;
         }
 
@@ -575,6 +584,7 @@ function init_mouse(refs, controle) {
             polygon_tmp.add_vertex(mouseX, mouseY);
             polygon_tmp.add_vertex(polygon_tmp.vertices[0], polygon_tmp.vertices[1]);
             controle.polygon_tmp = undefined;
+            refs.msg.textContent = "";
         }
     }
 
@@ -623,11 +633,11 @@ function init_mouse(refs, controle) {
 }
 
 /** Função que inicializa keyboard handling */
-function init_keyboard(controle) {
+function init_keyboard(refs, controle) {
     document.addEventListener ('keyup', (event) => {
         // Finaliza polígono pressionando ESC
         if (event.key == "Escape") {
-            finaliza_polygon(controle);
+            finaliza_polygon(refs, controle);
         }
     });
 }
@@ -653,7 +663,7 @@ function main()
     init_cores(refs, controle);
     init_botoes(refs, controle);
     init_mouse(refs, controle);
-    init_keyboard(controle);
+    init_keyboard(refs, controle);
 
     window.requestAnimationFrame(() => draw_scene(gl, program, refs));
 }
