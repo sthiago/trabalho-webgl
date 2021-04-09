@@ -104,6 +104,8 @@ class Base {
  * de abstração aqui chamada Primitive
  */
 class Primitive extends Base {
+    static tol = 6; // tolerância de pick em pixels
+
     constructor() {
         super();
 
@@ -161,7 +163,6 @@ class Primitive extends Base {
 }
 
 class Point extends Primitive {
-    static tol = 6; // tolerância de pick em pixels
     static list = [];
 
     static get_uniforms() {
@@ -209,7 +210,7 @@ class Point extends Primitive {
 
     /**
      * Verifica se determinado ponto (xm, ym) seleciona algum dos pontos.
-     * Retorna a referência do ponto, caso selecione e undefined caso contrário.
+     * Retorna a referência do ponto caso selecione e undefined caso contrário.
      * Os pontos são testados na ordem do último para o primeiro para que somente o
      * ponto mais à frente seja selecionado.
      */
@@ -244,6 +245,9 @@ class Point extends Primitive {
 
 class Line extends Primitive {
     static list = [];
+
+    // Codificações para pick de linha
+    static codificacao = [ 0b1000, 0b0100, 0b0010, 0b0001 ]; // left, right, down, up
 
     static draw(f_extra) {
         super.draw(f_extra);
@@ -284,6 +288,69 @@ class Line extends Primitive {
         this.gl.drawArrays(this.gl.LINES, 0, 2 * this.list.length);
     }
 
+    /**
+     * Verifica se determinado ponto (xm, ym) seleciona alguma das linhas.
+     * Retorna a referência da linha caso selecione e undefined caso contrário.
+     * As linhas são testadas na ordem da última para a primeira para que somente a
+     * linha mais à frente seja selecionada.
+     */
+     static pick(xm, ym) {
+        const tol = this.tol;
+        const [ left, right, down, up ] = this.codificacao;
+
+        forpickline: for (const l of this.list.slice().reverse()) {
+            let [ x1, y1, x2, y2 ] = [ l.x1, l.y1, l.x2, l.y2 ];
+
+            // y - y0 = m * (x - x0)
+            const m = (y2 - y1) / (x2 - x1);
+
+            // Laço de teste movendo p1 pelas fronteiras, caso necessário
+            const code_p2 = this.encode(x2, y2, xm, ym);
+            while (true) {
+                const code_p1 = this.encode(x1, y1, xm, ym);
+
+                // Um dos pontos extremos coincide com (xm, ym)
+                if (code_p1 == 0b0000 || code_p2 == 0b0000) { return l; }
+
+                // Casos impossíveis de cruzar com o retângulo de tolerância
+                if ((code_p1 & code_p2) != 0b0000) { continue forpickline; }
+
+                // Não caiu num caso trivial? Move p1 para a próxima fronteira
+                if (code_p1 & left) {
+                    y1 += m * (xm - tol - x1);
+                    x1 = xm - tol;
+                } else if (code_p1 & right) {
+                    y1 += m * (xm + tol - x1);
+                    x1 = xm + tol;
+                } else if (code_p1 & down) {
+                    x1 += (1/m) * (ym - tol - y1);
+                    y1 = ym - tol;
+                } else if (code_p1 & up) {
+                    x1 += (1/m) * (ym + tol - y1);
+                    y1 = ym + tol;
+                } else {
+                    return l;
+                }
+            }
+        }
+        return;
+    }
+
+    /** Método que retorna a codificação do ponto (x, y) em relação ao ponto (xm, ym) */
+    static encode(x, y, xm, ym) {
+        const [ left, right, down, up ] = this.codificacao;
+        const tol = this.tol;
+
+        let codigo = 0;
+
+        if (x < xm - tol) codigo |= left;
+	    if (x > xm + tol) codigo |= right;
+	    if (y < ym - tol) codigo |= down;
+	    if (y > ym + tol) codigo |= up;
+
+        return codigo;
+    }
+
     constructor(x1, y1, x2, y2) {
         super();
 
@@ -300,6 +367,17 @@ class Line extends Primitive {
         this.y1 = y1;
         this.x2 = x2;
         this.y2 = y2;
+    }
+
+    boundingbox() {
+        const largura = Math.abs(this.x2 - this.x1);
+        const altura = Math.abs(this.y2 - this.y1);
+
+        return {
+            'xc': (this.x2 + this.x1) / 2,
+            'yc': (this.y2 + this.y1) / 2,
+            'aresta' : Math.max(largura, altura),
+        }
     }
 }
 
@@ -563,11 +641,33 @@ function init_mouse(refs, controle) {
 
         // Se estiver no modo de seleção, desenha caixa ao passar em cima dos objetos
         if (controle.ferramenta == "select") {
-            const p_sel = Point.pick(mouseX, mouseY);
-            if (p_sel != undefined & controle.hoverbox == undefined) {
+            let p_sel = Point.pick(mouseX, mouseY);
+            let l_sel = Line.pick(mouseX, mouseY);
+
+            // Prioridade de seleção
+            if (p_sel != undefined) {
+                l_sel = undefined;
+                controle.hoverbox.delete();
+                controle.hoverbox = undefined;
+            }
+
+            // Desenha hoverbox para pontos
+            if (p_sel != undefined && controle.hoverbox == undefined) {
                 controle.hoverbox = new Box(p_sel.x, p_sel.y, 20);
             }
-            if (p_sel == undefined & controle.hoverbox != undefined) {
+
+            // Desenha hoverbox para linhas
+            if (l_sel != undefined && controle.hoverbox == undefined) {
+                const bbox = l_sel.boundingbox();
+                controle.hoverbox = new Box(bbox.xc, bbox.yc, bbox.aresta + 20);
+            }
+
+            // Apaga hoverbox se nada estiver selecionado
+            if (
+                p_sel == undefined
+                && l_sel == undefined
+                && controle.hoverbox != undefined
+            ) {
                 controle.hoverbox.delete();
                 controle.hoverbox = undefined;
             }
