@@ -431,8 +431,14 @@ class Box {
             new Line(xc+aresta/2, yc+aresta/2, xc+aresta/2, yc-aresta/2),
             new Line(xc+aresta/2, yc-aresta/2, xc-aresta/2, yc-aresta/2),
         ];
-
         this.set_claro();
+    }
+
+    set_lines(xc, yc, aresta) {
+        this.lines[0].set_position(xc-aresta/2, yc-aresta/2, xc-aresta/2, yc+aresta/2);
+        this.lines[1].set_position(xc-aresta/2, yc+aresta/2, xc+aresta/2, yc+aresta/2);
+        this.lines[2].set_position(xc+aresta/2, yc+aresta/2, xc+aresta/2, yc-aresta/2);
+        this.lines[3].set_position(xc+aresta/2, yc-aresta/2, xc-aresta/2, yc-aresta/2);
     }
 
     set_claro() {
@@ -641,35 +647,40 @@ function init_mouse(refs, controle) {
 
         // Se estiver no modo de seleção, desenha caixa ao passar em cima dos objetos
         if (controle.ferramenta == "select") {
-            let p_sel = Point.pick(mouseX, mouseY);
-            let l_sel = Line.pick(mouseX, mouseY);
+            const obj_sel = Point.pick(mouseX, mouseY) || Line.pick(mouseX, mouseY);
 
-            // Prioridade de seleção
-            if (p_sel != undefined) {
-                l_sel = undefined;
-                controle.hoverbox.delete();
-                controle.hoverbox = undefined;
+            // Nem continua se nada estiver sendo selecionado
+            if (obj_sel == undefined) {
+                // Remove hoverbox se ela existir
+                if (controle.hoverbox != undefined) {
+                    controle.hoverbox.delete();
+                    controle.hoverbox = undefined;
+                }
+                return;
             }
 
-            // Desenha hoverbox para pontos
-            if (p_sel != undefined && controle.hoverbox == undefined) {
-                controle.hoverbox = new Box(p_sel.x, p_sel.y, 20);
-            }
-
-            // Desenha hoverbox para linhas
-            if (l_sel != undefined && controle.hoverbox == undefined) {
-                const bbox = l_sel.boundingbox();
-                controle.hoverbox = new Box(bbox.xc, bbox.yc, bbox.aresta + 20);
-            }
-
-            // Apaga hoverbox se nada estiver selecionado
+            // Ignora se obj_sel for uma das linhas da hoverbox
             if (
-                p_sel == undefined
-                && l_sel == undefined
-                && controle.hoverbox != undefined
+                controle.hoverbox != undefined
+                && controle.hoverbox.lines.includes(obj_sel)
             ) {
-                controle.hoverbox.delete();
-                controle.hoverbox = undefined;
+                return;
+            }
+
+            // Define parâmetros da hoverbox dependendo do tipo de objeto
+            let hoverbox_params;
+            if (obj_sel instanceof Point) {
+                hoverbox_params = [ obj_sel.x, obj_sel.y, 20 ];
+            } else if (obj_sel instanceof Line) {
+                const bbox = obj_sel.boundingbox();
+                hoverbox_params = [ bbox.xc, bbox.yc, bbox.aresta + 20 ];
+            }
+
+            // Cria hoverbox se ela não existir e atualiza se existir
+            if (controle.hoverbox == undefined) {
+                controle.hoverbox = new Box(...hoverbox_params);
+            } else {
+                controle.hoverbox.set_lines(...hoverbox_params);
             }
         }
     }
