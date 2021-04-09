@@ -537,11 +537,11 @@ function init_cores(refs, controle) {
             // Muda a cor do polígono se ele estiver sendo desenhado
             const polygon_tmp = controle.polygon_tmp;
             if (polygon_tmp != undefined) {
-                polygon_tmp.set_color.apply(polygon_tmp, controle.cor);
+                polygon_tmp.set_color(...controle.cor);
             }
             const polygon_first_line = controle.polygon_first_line;
             if (polygon_first_line != undefined) {
-                polygon_first_line.set_color.apply(polygon_first_line, controle.cor);
+                polygon_first_line.set_color(...controle.cor);
             }
         }
     }
@@ -701,7 +701,7 @@ function init_mouse(refs, controle) {
             && !e.ctrlKey
         ) {
             const p = new Point(mouseX, mouseY);
-            p.set_color.apply(p, cor);
+            p.set_color(...cor);
             return;
         };
 
@@ -715,11 +715,11 @@ function init_mouse(refs, controle) {
             const polygon_tmp = controle.polygon_tmp = new Polygon();
             polygon_tmp.add_vertex(mouseX, mouseY);
             polygon_tmp.add_vertex(mouseX, mouseY);
-            polygon_tmp.set_color.apply(polygon_tmp, cor);
+            polygon_tmp.set_color(...cor);
 
             // Cria uma linha temporária para a primeira aresta do polígono
             controle.polygon_first_line = new Line(mouseX, mouseY, mouseX, mouseY);
-            controle.polygon_first_line.set_color.apply(controle.polygon_first_line, cor);
+            controle.polygon_first_line.set_color(...cor);
 
             // Atualiza mensagem de status
             refs.msg.textContent = "Aperte ESC para finalizar o polígono ou \
@@ -774,7 +774,7 @@ function init_mouse(refs, controle) {
             && controle.line_tmp == undefined
         ) {
             controle.line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
-            controle.line_tmp.set_color.apply(controle.line_tmp, controle.cor);
+            controle.line_tmp.set_color(...controle.cor);
             return;
         }
 
