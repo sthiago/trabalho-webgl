@@ -376,7 +376,8 @@ class Line extends Primitive {
         return {
             'xc': (this.x2 + this.x1) / 2,
             'yc': (this.y2 + this.y1) / 2,
-            'aresta' : Math.max(largura, altura),
+            'w': largura,
+            'h': altura,
         }
     }
 }
@@ -424,21 +425,21 @@ class Polygon extends Primitive {
 }
 
 class Box {
-    constructor(xc, yc, aresta) {
+    constructor(xc, yc, w, h) {
         this.lines = [
-            new Line(xc-aresta/2, yc-aresta/2, xc-aresta/2, yc+aresta/2),
-            new Line(xc-aresta/2, yc+aresta/2, xc+aresta/2, yc+aresta/2),
-            new Line(xc+aresta/2, yc+aresta/2, xc+aresta/2, yc-aresta/2),
-            new Line(xc+aresta/2, yc-aresta/2, xc-aresta/2, yc-aresta/2),
+            new Line(xc-w/2, yc-h/2, xc-w/2, yc+h/2),
+            new Line(xc-w/2, yc+h/2, xc+w/2, yc+h/2),
+            new Line(xc+w/2, yc+h/2, xc+w/2, yc-h/2),
+            new Line(xc+w/2, yc-h/2, xc-w/2, yc-h/2),
         ];
         this.set_claro();
     }
 
-    set_lines(xc, yc, aresta) {
-        this.lines[0].set_position(xc-aresta/2, yc-aresta/2, xc-aresta/2, yc+aresta/2);
-        this.lines[1].set_position(xc-aresta/2, yc+aresta/2, xc+aresta/2, yc+aresta/2);
-        this.lines[2].set_position(xc+aresta/2, yc+aresta/2, xc+aresta/2, yc-aresta/2);
-        this.lines[3].set_position(xc+aresta/2, yc-aresta/2, xc-aresta/2, yc-aresta/2);
+    set_lines(xc, yc, w, h) {
+        this.lines[0].set_position(xc-w/2, yc-h/2, xc-w/2, yc+h/2);
+        this.lines[1].set_position(xc-w/2, yc+h/2, xc+w/2, yc+h/2);
+        this.lines[2].set_position(xc+w/2, yc+h/2, xc+w/2, yc-h/2);
+        this.lines[3].set_position(xc+w/2, yc-h/2, xc-w/2, yc-h/2);
     }
 
     set_claro() {
@@ -670,10 +671,10 @@ function init_mouse(refs, controle) {
             // Define parâmetros da hoverbox dependendo do tipo de objeto
             let hoverbox_params;
             if (obj_sel instanceof Point) {
-                hoverbox_params = [ obj_sel.x, obj_sel.y, 20 ];
+                hoverbox_params = [ obj_sel.x, obj_sel.y, 20, 20 ];
             } else if (obj_sel instanceof Line) {
                 const bbox = obj_sel.boundingbox();
-                hoverbox_params = [ bbox.xc, bbox.yc, bbox.aresta + 20 ];
+                hoverbox_params = [ bbox.xc, bbox.yc, bbox.w + 20, bbox.h + 20 ];
             }
 
             // Cria hoverbox se ela não existir e atualiza se existir
