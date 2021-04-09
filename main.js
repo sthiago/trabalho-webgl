@@ -161,6 +161,7 @@ class Primitive extends Base {
 }
 
 class Point extends Primitive {
+    static tol = 6; // tolerância de pick em pixels
     static list = [];
 
     static get_uniforms() {
@@ -204,6 +205,26 @@ class Point extends Primitive {
 
         // Desenha todos os pontos
         this.gl.drawArrays(this.gl.POINTS, 0, this.list.length);
+    }
+
+    /**
+     * Verifica se determinado ponto (xm, ym) seleciona algum dos pontos.
+     * Retorna a referência do ponto, caso selecione e undefined caso contrário.
+     * Os pontos são testados na ordem do último para o primeiro para que somente o
+     * ponto mais à frente seja selecionado.
+     */
+    static pick(xm, ym) {
+        for (const p of this.list.slice().reverse()) {
+            if (
+                xm > p.x - this.tol
+                && xm < p.x + this.tol
+                && ym > p.y - this.tol
+                && ym < p.y + this.tol
+            ) {
+                return p;
+            }
+        }
+        return;
     }
 
     constructor(x, y) {
@@ -324,6 +345,27 @@ class Polygon extends Primitive {
     }
 }
 
+class Box {
+    constructor(xc, yc, aresta) {
+        this.lines = [
+            new Line(xc-aresta/2, yc-aresta/2, xc-aresta/2, yc+aresta/2),
+            new Line(xc-aresta/2, yc+aresta/2, xc+aresta/2, yc+aresta/2),
+            new Line(xc+aresta/2, yc+aresta/2, xc+aresta/2, yc-aresta/2),
+            new Line(xc+aresta/2, yc-aresta/2, xc-aresta/2, yc-aresta/2),
+        ]
+
+        for (const l of this.lines) {
+            l.set_color(140, 140, 140, 255);
+        }
+    }
+
+    delete() {
+        for (const l of this.lines) {
+            l.delete();
+        }
+    }
+}
+
 /** Função que retorna um dicionário com elementos DOM necessários e outras coisas */
 function get_elementos() {
     return {
@@ -337,6 +379,7 @@ function get_elementos() {
             "point": document.querySelector("#btn_ponto"),
             "line": document.querySelector("#btn_linha"),
             "polygon": document.querySelector("#btn_poligono"),
+            "select": document.querySelector("#btn_selecionar"),
         },
         "btn_limpar": document.querySelector("#btn_limpar"),
         "cores_elms": {
@@ -507,6 +550,18 @@ function init_mouse(refs, controle) {
             polygon_first_line.set_position(
                 polygon_first_line.x1, polygon_first_line.y1, mouseX, mouseY);
         }
+
+        // Se estiver no modo de seleção, desenha caixa ao passar em cima dos objetos
+        if (controle.ferramenta == "select") {
+            const p_sel = Point.pick(mouseX, mouseY);
+            if (p_sel != undefined & controle.hoverbox == undefined) {
+                controle.hoverbox = new Box(p_sel.x, p_sel.y, 20);
+            }
+            if (p_sel == undefined & controle.hoverbox != undefined) {
+                controle.hoverbox.delete();
+                controle.hoverbox = undefined;
+            }
+        }
     }
 
     // Clique do mouse (principais funcionalidades de desenho)
@@ -652,6 +707,7 @@ function main()
         "polygon_first_line": undefined,
         "mouseX": undefined,
         "mouseY": undefined,
+        "hoverbox": undefined,
     }
 
     // Inicializa e configura funcionalidades
