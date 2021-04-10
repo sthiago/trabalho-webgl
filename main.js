@@ -799,15 +799,12 @@ function init_mouse(refs, controle) {
         }
 
         // Finaliza o polígono sendo desenhado se o usuário clicar segurando ctrl
-        // (Adiciona o vértice e depois finaliza, diferente de apertar ESC)
+        // (Mantém o vértice e finaliza, diferente de apertar ESC)
         if (
             controle.ferramenta == "polygon"
             && controle.polygon_tmp != undefined
             && e.ctrlKey
         ) {
-            const polygon_tmp = controle.polygon_tmp;
-            polygon_tmp.add_vertex(mouseX, mouseY);
-            polygon_tmp.add_vertex(polygon_tmp.vertices[0], polygon_tmp.vertices[1]);
             controle.polygon_tmp = undefined;
             refs.msg.textContent = "";
         }
