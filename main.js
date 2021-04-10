@@ -446,7 +446,7 @@ class Polygon extends Primitive {
 
             let count = 0;
             for (let i = 0; i < vertices.length-2; i += 2) {
-                const aresta = vertices.slice(i, 4);
+                const aresta = vertices.slice(i, i+4);
                 if (this.raio_intercepta_linha(xm, ym, ...aresta)) {
                     count++;
                 }
