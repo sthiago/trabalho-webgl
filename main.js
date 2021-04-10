@@ -379,33 +379,54 @@ class Line extends Primitive {
     }
 }
 
+
+// TODO: REMOVER ISTO -- só usando pra debugar a triangulação
+seed = 1
+function random() {
+    var x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+}
+
 class Polygon extends Primitive {
     static list = [];
 
     static draw(f_extra) {
         super.draw(f_extra);
 
-        // No caso dos polígonos, é preciso fazer uma chamada separada pra cada um por
-        // causa do comportamento padrão das primitivas GL (tanto TRIANGLE_FAN quanto
-        // TRIANGLE_STRIP).
+        let total_vertices = 0;
+        const jsarr_position = [];
+        const jsarr_color = [];
         for (const p of this.list) {
-            // a_position
-            const arr_position = new Float32Array(p.vertices);
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_position, this.gl.STATIC_DRAW);
+            // Pula polígonos não triangulados ou que têm menos do que 1 triângulo
+            // Obs: p.triangles é preenchida na p.triangulate()
+            if (p.triangles == undefined || p.triangles.length == 0) continue;
 
-            // a_color
-            let color_data = [];
-            for (let i = 0; i < p.vertices.length/2; i++) {
-                color_data = color_data.concat(p.color);
+            for (const t of p.triangles) {
+                total_vertices += 3;
+
+                // a_position
+                jsarr_position.push(t[0].x, t[0].y, t[1].x, t[1].y, t[2].x, t[2].y);
+
+                // a_color
+                // let color_data = [...p.color, ...p.color, ...p.color];
+                seed = t[0].x + t[0].y + t[1].x + t[1].y + t[2].x + t[2].y;
+                const randcolor = [255*random(), 255*random(), 255*random(), 255];
+                const color_data = [...randcolor, ...randcolor, ...randcolor];
+                jsarr_color.push(...color_data);
             }
-            const arr_color = new Uint8Array(color_data);
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_color, this.gl.STATIC_DRAW);
-
-            // Desenha este polígono
-            this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, p.vertices.length/2);
         }
+
+        // a_position
+        const arr_position = new Float32Array(jsarr_position);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_position_buf);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_position, this.gl.STATIC_DRAW);
+
+        // a_color
+        const arr_color = new Uint8Array(jsarr_color);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.a_color_buf);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, arr_color, this.gl.STATIC_DRAW);
+
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, total_vertices);
     }
 
     static raio_intercepta_linha(xm, ym, x1, y1, x2, y2)
@@ -441,13 +462,16 @@ class Polygon extends Primitive {
 
     static pick(xm, ym) {
         for (const p of this.list) {
-            const vertices = p.vertices.slice();
-            vertices.push(vertices[0], vertices[1]);
+            const vertices = p.ordered_vertices.slice();
+            vertices.push(vertices[0]);
+
+            // console.log(vertices);
 
             let count = 0;
-            for (let i = 0; i < vertices.length-2; i += 2) {
-                const aresta = vertices.slice(i, i+4);
-                if (this.raio_intercepta_linha(xm, ym, ...aresta)) {
+            for (let i = 0; i < vertices.length-1; i++) {
+                const [ x1, y1 ] = [ vertices[i+0].x, vertices[i+0].y ];
+                const [ x2, y2 ] = [ vertices[i+1].x, vertices[i+1].y ];
+                if (this.raio_intercepta_linha(xm, ym, x1, y1, x2, y2)) {
                     count++;
                 }
             }
@@ -486,7 +510,7 @@ class Polygon extends Primitive {
     sort_vertices() {
         // Cria array auxilar com os pontos
         const points = [];
-        outerforsort: for (let i = 0; i < this.vertices.length; i += 2) {
+        outerforsort: for (let i = 0; i < this.vertices.length-1; i += 2) {
             const new_p = {
                 "x": this.vertices[i],
                 "y": this.vertices[i+1]
@@ -517,21 +541,24 @@ class Polygon extends Primitive {
         // Ordena os pontos pela coord. polar e quadrado da distância
         points.sort((a, b) => a.polar - b.polar || a.sqdist - b.sqdist);
 
-        return points;
+        this.ordered_vertices = points;
     }
 
     /**
      * Triangula polígono usando o algoritmo ear-clipping ingênuo
+     * Obs: é necessário executar p.sort_vertices() primeiro
      * Fonte: https://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
      */
-    triangulate(points) {
+    triangulate() {
+        const points = this.ordered_vertices.slice();
+
+        this.triangles = [];
         if (points.length < 3) return;
 
         // Olha os vértices de 3 em 3 e verifica se é uma "orelha" (o vértice central
         // têm de ser convexo, ou seja, mais longe do centro de massa que os outros)
-        let bug_count = 0;
+        // let bug_count = 0;
 
-        this.triangles = [];
         while (points.length > 3) {
             // if (bug_count++ > 100) { throw Error("LOOP INFINITO"); break; }
 
@@ -562,17 +589,15 @@ class Polygon extends Primitive {
 
     add_vertex(x, y) {
         this.vertices.push(x, y);
-        const points = this.sort_vertices();
-        this.triangulate(points);
-        if (this.triangles) console.log("triangles!", this.triangles);
+        this.sort_vertices();
+        this.triangulate();
     }
 
     update_last_vertex(x, y) {
         this.vertices[this.vertices.length-2] = x;
         this.vertices[this.vertices.length-1] = y;
-        const points = this.sort_vertices();
-        this.triangulate(points);
-        if (this.triangles) console.log("triangles!", this.triangles);
+        this.sort_vertices();
+        this.triangulate();
     }
 }
 
@@ -713,6 +738,10 @@ function finaliza_polygon(refs, controle) {
     polygon_tmp.vertices.pop();
     polygon_tmp.vertices.pop();
 
+    // Depois de remover o último vértice, temos que retriangular
+    polygon_tmp.sort_vertices();
+    polygon_tmp.triangulate();
+
     // Se o polígono sendo desenhado tiver menos do que 3 vértices (lembrar que o último
     // foi removido), significa que ele não é um polígono, então deve ser deletado.
     if (polygon_tmp.vertices.length/2 < 3) {
@@ -800,8 +829,17 @@ function init_mouse(refs, controle) {
         // Se estiver no modo de seleção, desenha caixa ao passar em cima dos objetos
         if (controle.ferramenta == "select") {
             const obj_sel = Point.pick(mouseX, mouseY)
-                || Line.pick(mouseX, mouseY);
-                //|| Polygon.pick(mouseX, mouseY);
+                || Line.pick(mouseX, mouseY)
+                || Polygon.pick(mouseX, mouseY);
+
+            if (obj_sel) {
+                refs.msg.textContent = "SELECTED";
+                // console.log(obj_sel);
+            } else {
+                refs.msg.textContent = "";
+            }
+
+            return;
 
             // Nem continua se nada estiver sendo selecionado
             if (obj_sel == undefined) {
