@@ -468,8 +468,111 @@ class Polygon extends Primitive {
         this.constructor.list.push(this);
     }
 
+    // Retorna coordenada polar do ponto em relação ao ponto (xcm, ycm)
+    polar(ponto, xcm, ycm) {
+        return Math.atan2(ponto.y - ycm, ponto.x - xcm);
+    }
+
+    // Retorna quadrado da distância do ponto a (xcm, ycm)
+    sqdist(ponto, xcm, ycm) {
+        return (ponto.x - xcm)**2 + (ponto.y - ycm)**2;
+    }
+
+    /**
+     * Encontra ordem dos vértices que resulta em um polígono simples (sem buracos
+     * e sem arestas que se cruzam)
+     * Fonte: https://stackoverflow.com/a/59293807/1694726
+     */
+    sort_vertices() {
+        // Cria array auxilar com os pontos
+        const points = [];
+        outerforsort: for (let i = 0; i < this.vertices.length; i += 2) {
+            const new_p = {
+                "x": this.vertices[i],
+                "y": this.vertices[i+1]
+            };
+
+            // Desconsidera pontos com coordenadas iguais
+            for (const p of points) {
+                if (new_p.x == p.x && new_p.y == p.y) {
+                    continue outerforsort;
+                }
+            }
+
+            points.push(new_p);
+        }
+
+        // Encontra "centro de massa" dos pontos
+        const xcm = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+        const ycm = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+        [ this.xcm, this.ycm ] = [ xcm, ycm ];
+
+        // Encontra as coordenadas polares e os quadrados das distâncias de cada ponto
+        // ao centro de massa
+        for (let p of points) {
+            p.polar = this.polar(p, xcm, ycm);
+            p.sqdist = this.sqdist(p, xcm, ycm);
+        }
+
+        // Ordena os pontos pela coord. polar e quadrado da distância
+        points.sort((a, b) => a.polar - b.polar || a.sqdist - b.sqdist);
+
+        return points;
+    }
+
+    /**
+     * Triangula polígono usando o algoritmo ear-clipping ingênuo
+     * Fonte: https://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
+     */
+    triangulate(points) {
+        if (points.length < 3) return;
+
+        // Olha os vértices de 3 em 3 e verifica se é uma "orelha" (o vértice central
+        // têm de ser convexo, ou seja, mais longe do centro de massa que os outros)
+        let bug_count = 0;
+
+        this.triangles = [];
+        while (points.length > 3) {
+            // if (bug_count++ > 100) { throw Error("LOOP INFINITO"); break; }
+
+            // console.log("points", points);
+            for (let i = 0;; i++) {
+                const [ p1, p2, p3 ] = [
+                    points[(i+0)%(points.length)],
+                    points[(i+1)%(points.length)],
+                    points[(i+2)%(points.length)],
+                ];
+                // console.log("p1p2p3", p1, p2, p3);
+
+                // Se p2 mais longe do CM do que p1 e p3, é uma orelha. Então adiciona o
+                // triângulo p1p2p3 e remove p2 da lista de pontos.
+                if (p2.sqdist > p1.sqdist && p2.sqdist > p3.sqdist) {
+                    // console.log("orelha!", p1, p2, p3);
+                    this.triangles.push([p1, p2, p3]);
+                    points.splice(points.indexOf(p2), 1);
+                    break; // for
+                }
+            }
+        }
+
+        // Adiciona o último triângulo
+        const [ p1, p2, p3 ] = [ points[0], points[1], points[2] ];
+        this.triangles.push([p1, p2, p3]);
+    }
+
     add_vertex(x, y) {
         this.vertices.push(x, y);
+        const points = this.sort_vertices();
+        this.triangulate(points);
+        if (this.triangles) console.log("triangles!", this.triangles);
+    }
+
+    update_last_vertex(x, y) {
+        this.vertices[this.vertices.length-2] = x;
+        this.vertices[this.vertices.length-1] = y;
+        const points = this.sort_vertices();
+        this.triangulate(points);
+        if (this.triangles) console.log("triangles!", this.triangles);
     }
 }
 
@@ -687,8 +790,7 @@ function init_mouse(refs, controle) {
             line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
         }
         if (polygon_tmp != undefined) {
-            polygon_tmp.vertices[polygon_tmp.vertices.length-2] = mouseX;
-            polygon_tmp.vertices[polygon_tmp.vertices.length-1] = mouseY;
+            polygon_tmp.update_last_vertex(mouseX, mouseY);
         }
         if (polygon_first_line != undefined) {
             polygon_first_line.set_position(
