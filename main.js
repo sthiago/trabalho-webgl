@@ -160,6 +160,15 @@ class Primitive extends Base {
     set_color(r, g, b, a) {
         this.color = [r, g, b, a];
     }
+
+    /**
+     * Verifica se determinado ponto (xm, ym) seleciona algum dos objetos.
+     * Retorna a referência do objeto caso selecione e undefined caso contrário.
+     * Os objetos são testados na ordem do último para o primeiro para que somente o
+     * mais à frente (mais recente) seja selecionado.
+     * Este método deve ser sobrescrito nas subclasses.
+     */
+    static pick() {}
 }
 
 class Point extends Primitive {
@@ -208,12 +217,6 @@ class Point extends Primitive {
         this.gl.drawArrays(this.gl.POINTS, 0, this.list.length);
     }
 
-    /**
-     * Verifica se determinado ponto (xm, ym) seleciona algum dos pontos.
-     * Retorna a referência do ponto caso selecione e undefined caso contrário.
-     * Os pontos são testados na ordem do último para o primeiro para que somente o
-     * ponto mais à frente seja selecionado.
-     */
     static pick(xm, ym) {
         for (const p of this.list.slice().reverse()) {
             if (
@@ -288,13 +291,7 @@ class Line extends Primitive {
         this.gl.drawArrays(this.gl.LINES, 0, 2 * this.list.length);
     }
 
-    /**
-     * Verifica se determinado ponto (xm, ym) seleciona alguma das linhas.
-     * Retorna a referência da linha caso selecione e undefined caso contrário.
-     * As linhas são testadas na ordem da última para a primeira para que somente a
-     * linha mais à frente seja selecionada.
-     */
-     static pick(xm, ym) {
+    static pick(xm, ym) {
         const tol = this.tol;
         const [ left, right, down, up ] = this.codificacao;
 
@@ -409,6 +406,58 @@ class Polygon extends Primitive {
             // Desenha este polígono
             this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, p.vertices.length/2);
         }
+    }
+
+    static raio_intercepta_linha(xm, ym, x1, y1, x2, y2)
+    {
+        const tol = this.tol;
+
+        // Garante que p1 está acima de p2
+        if (y1 >= y2) {
+            [ x1, x2 ] = [ x2, x1 ];
+            [ y1, y2 ] = [ y2, y1 ];
+        }
+
+        if (ym == y1 || ym == y2) {
+            ym = ym + tol/2;
+        }
+
+        if (ym < y1 || ym > y2) {
+            return false;
+        } else if (xm > Math.max(x1, x2)) {
+            return false;
+        } else if (xm < Math.min(x1, x2)) {
+            return true;
+        } else {
+            // m1 = coef. ang. entre p1 e p2
+            const m1 = (y2 - y1) / (x2 - x1);
+
+            // m2 = coef. ang. entre p1 e pmouse (ponto clicado)
+            const m2 = (ym - y1) / (xm - x1);
+
+            return m2 >= m1;
+        }
+    }
+
+    static pick(xm, ym) {
+        for (const p of this.list) {
+            const vertices = p.vertices.slice();
+            vertices.push(vertices[0], vertices[1]);
+
+            let count = 0;
+            for (let i = 0; i < vertices.length-2; i += 2) {
+                const aresta = vertices.slice(i, 4);
+                if (this.raio_intercepta_linha(xm, ym, ...aresta)) {
+                    count++;
+                }
+            }
+
+            // Seleciona caso interceptar um número ímpar de vezes
+            if (count%2 != 0) {
+                return p;
+            }
+        }
+        return;
     }
 
     constructor() {
@@ -648,7 +697,9 @@ function init_mouse(refs, controle) {
 
         // Se estiver no modo de seleção, desenha caixa ao passar em cima dos objetos
         if (controle.ferramenta == "select") {
-            const obj_sel = Point.pick(mouseX, mouseY) || Line.pick(mouseX, mouseY);
+            const obj_sel = Point.pick(mouseX, mouseY)
+                || Line.pick(mouseX, mouseY);
+                //|| Polygon.pick(mouseX, mouseY);
 
             // Nem continua se nada estiver sendo selecionado
             if (obj_sel == undefined) {
@@ -675,7 +726,9 @@ function init_mouse(refs, controle) {
             } else if (obj_sel instanceof Line) {
                 const bbox = obj_sel.boundingbox();
                 hoverbox_params = [ bbox.xc, bbox.yc, bbox.w + 20, bbox.h + 20 ];
-            }
+            } //else if (obj_sel instanceof Polygon) {
+            //     console.log(obj_sel);
+            // }
 
             // Cria hoverbox se ela não existir e atualiza se existir
             if (controle.hoverbox == undefined) {
