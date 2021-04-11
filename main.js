@@ -632,6 +632,25 @@ class Polygon extends Primitive {
         this.sort_vertices();
         this.triangulate();
     }
+
+    boundingbox() {
+        const xs = this.ordered_vertices.map(p => p.x);
+        const ys = this.ordered_vertices.map(p => p.y);
+
+        const [ xmax, xmin ] = [ Math.max(...xs), Math.min(...xs) ];
+        const [ ymax, ymin ] = [ Math.max(...ys), Math.min(...ys) ];
+
+        const largura = xmax - xmin;
+        const altura = ymax - ymin;
+
+        return {
+            'xc': (xmax+xmin)/2,
+            'yc': (ymax+ymin)/2,
+            'w': largura,
+            'h': altura,
+        }
+
+    }
 }
 
 class Box {
@@ -861,20 +880,9 @@ function init_mouse(refs, controle) {
 
         // Se estiver no modo de seleção, desenha caixa ao passar em cima dos objetos
         if (controle.ferramenta == "select") {
-            // const obj_sel = Point.pick(mouseX, mouseY)
-            //     || Line.pick(mouseX, mouseY)
-            //     || Polygon.pick(mouseX, mouseY);
-
-            const obj_sel = Polygon.pick(mouseX, mouseY);
-
-            if (obj_sel && obj_sel instanceof Polygon) {
-                refs.msg.textContent = "SELECTED";
-                // console.log(obj_sel);
-            } else {
-                refs.msg.textContent = "";
-            }
-
-            return;
+            const obj_sel = Point.pick(mouseX, mouseY)
+                || Line.pick(mouseX, mouseY)
+                || Polygon.pick(mouseX, mouseY);
 
             // Nem continua se nada estiver sendo selecionado
             if (obj_sel == undefined) {
@@ -901,9 +909,10 @@ function init_mouse(refs, controle) {
             } else if (obj_sel instanceof Line) {
                 const bbox = obj_sel.boundingbox();
                 hoverbox_params = [ bbox.xc, bbox.yc, bbox.w + 20, bbox.h + 20 ];
-            } //else if (obj_sel instanceof Polygon) {
-            //     console.log(obj_sel);
-            // }
+            } else if (obj_sel instanceof Polygon) {
+                const bbox = obj_sel.boundingbox();
+                hoverbox_params = [ bbox.xc, bbox.yc, bbox.w + 20, bbox.h + 20 ];
+            }
 
             // Cria hoverbox se ela não existir e atualiza se existir
             if (controle.hoverbox == undefined) {
