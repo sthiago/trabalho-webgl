@@ -431,7 +431,9 @@ class Polygon extends Primitive {
 
     static raio_intercepta_linha(xm, ym, x1, y1, x2, y2)
     {
-        const tol = this.tol;
+        // Evita que os coeficientes angulares deem divisão por zero causando seleções
+        // em locais errados
+        xm += 0.1;
 
         // Garante que p1 está acima de p2
         if (y1 >= y2) {
@@ -440,7 +442,7 @@ class Polygon extends Primitive {
         }
 
         if (ym == y1 || ym == y2) {
-            ym = ym + tol/2;
+            ym = ym + this.tol/2;
         }
 
         if (ym < y1 || ym > y2) {
