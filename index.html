@@ -54,6 +54,16 @@
             margin: 10px;
         }
 
+        .rotulo {
+            display: inline-block;
+            width: 80px;
+        }
+
+        .valor-slider {
+            display: inline-block;
+            width: 50px;
+        }
+
         .cor {
             display: inline-block;
             padding: 2px;
@@ -143,6 +153,20 @@
     <div id="msg"></div>
     <div class="group">
         <input id="debug_tri" type="checkbox"> Mostrar triângulos (debug) <br>
+    </div>
+    <div class="group">
+        <div id="slider-rot-div">
+            <span class="rotulo">Rotação:</span>
+            <span class="valor-slider">-180&deg;</span>
+            <input type="range" min="-180" max="180" step="1" value="0" class="slider" id="slider-rot">
+            <span class="valor-slider">+180&deg;</span>
+        </div>
+        <div id="slider-esc-div">
+            <span class="rotulo">Escala:</span>
+            <span class="valor-slider">0.25x</span>
+            <input type="range" min="0.25" max="4" step="0.05" value="1" class="slider" id="slider-esc">
+            <span class="valor-slider">4x</span>
+        </div>
     </div>
 
     <script src="initShaders.js"></script>
