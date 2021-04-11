@@ -381,6 +381,10 @@ class Line extends Primitive {
             'h': altura,
         }
     }
+
+    translate(dx, dy) {
+        this.set_position(this.x1 + dx, this.y1 + dy, this.x2 + dx, this.y2 + dy);
+    }
 }
 
 class Polygon extends Primitive {
@@ -650,6 +654,18 @@ class Polygon extends Primitive {
             'h': altura,
         }
 
+    }
+
+    translate(dx, dy) {
+        for (let i = 0; i < this.vertices.length-1; i+=2) {
+            this.vertices[i+0] += dx;
+            this.vertices[i+1] += dy;
+        }
+
+        // Acho que seria mais eficiente mover os triângulos. Mas é mais fácil simples-
+        // mente triangular de novo
+        this.sort_vertices();
+        this.triangulate();
     }
 }
 
