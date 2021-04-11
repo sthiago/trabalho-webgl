@@ -244,6 +244,10 @@ class Point extends Primitive {
         this.x = x;
         this.y = y;
     }
+
+    translate(dx, dy) {
+        this.set_position(this.x + dx, this.y + dy);
+    }
 }
 
 class Line extends Primitive {
@@ -877,7 +881,8 @@ function init_mouse(refs, controle) {
 
         // Se estiver no modo de seleção, desenha caixa ao passar em cima dos objetos
         if (controle.ferramenta == "select") {
-            const obj_sel = Point.pick(mouseX, mouseY)
+            const obj_sel = controle.selected_obj
+                || Point.pick(mouseX, mouseY)
                 || Line.pick(mouseX, mouseY)
                 || Polygon.pick(mouseX, mouseY);
 
@@ -899,6 +904,9 @@ function init_mouse(refs, controle) {
                 return;
             }
 
+            // Seta o objeto como sendo o atualmente sob o mouse
+            controle.hovered_obj = obj_sel;
+
             // Define parâmetros da hoverbox dependendo do tipo de objeto
             let hoverbox_params;
             if (obj_sel instanceof Point) {
@@ -916,6 +924,11 @@ function init_mouse(refs, controle) {
                 controle.hoverbox = new Box(...hoverbox_params);
             } else {
                 controle.hoverbox.set_lines(...hoverbox_params);
+            }
+
+            // Se existir um objeto selecionado, usa o movimento como translação
+            if (controle.selected_obj != undefined)    {
+                controle.selected_obj.translate(e.movementX, e.movementY);
             }
         }
     }
@@ -991,7 +1004,7 @@ function init_mouse(refs, controle) {
         }
     }
 
-    // Clicar e arrastar o mouse (para desenho de linhas)
+    // Clicar e arrastar o mouse
     refs.canvas.onmousedown = (e) => {
         // Não faz nada com ctrl nem shift
         if (e.ctrlKey || e.shiftKey) { return; }
@@ -1009,9 +1022,13 @@ function init_mouse(refs, controle) {
             return;
         }
 
-        // Escurece a hoverbox pra indicar o clique
+        // Seleciona o objeto
         if (controle.ferramenta == "select" && controle.hoverbox != undefined) {
+            // Escurece hoverbox
             controle.hoverbox.set_escuro();
+
+            // Seta ele como selecionado de fato
+            controle.selected_obj = controle.hovered_obj;
         }
     }
 
@@ -1035,9 +1052,13 @@ function init_mouse(refs, controle) {
             return;
         }
 
-        // Clareia a hoverbox pra indicar que soltou o mouse
+        // "Soltou" o mouse
         if (controle.ferramenta == "select" && controle.hoverbox != undefined) {
+            // Clareia hoverbox
             controle.hoverbox.set_claro();
+
+            // Desmarca objeto como selecionado
+            controle.selected_obj = undefined;
         }
     }
 
@@ -1081,6 +1102,8 @@ function main()
         "mouseX": undefined,
         "mouseY": undefined,
         "hoverbox": undefined,
+        "hovered_obj": undefined,
+        "selected_obj": undefined,
     }
 
     // Inicializa e configura funcionalidades
