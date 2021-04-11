@@ -379,16 +379,9 @@ class Line extends Primitive {
     }
 }
 
-
-// FIXME: REMOVER ISTO -- só usando pra debugar a triangulação
-seed = 1
-function random() {
-    var x = Math.sin(seed++) * 10000;
-    return x - Math.floor(x);
-}
-
 class Polygon extends Primitive {
     static list = [];
+    static debug_tri = false;
 
     static draw(f_extra) {
         super.draw(f_extra);
@@ -408,10 +401,15 @@ class Polygon extends Primitive {
                 jsarr_position.push(t[0].x, t[0].y, t[1].x, t[1].y, t[2].x, t[2].y);
 
                 // a_color
-                // let color_data = [...p.color, ...p.color, ...p.color];
-                seed = t[0].x + t[0].y + t[1].x + t[1].y + t[2].x + t[2].y;
-                const randcolor = [255*random(), 255*random(), 255*random(), 255];
-                const color_data = [...randcolor, ...randcolor, ...randcolor];
+                let color_data;
+                if (this.debug_tri) {
+                    // Cor aleatória pra cada triângulo baseado nos vértices
+                    seed = t[0].x + t[0].y + t[1].x + t[1].y + t[2].x + t[2].y;
+                    const randcolor = [255*random(), 255*random(), 255*random(), 255];
+                    color_data = [...randcolor, ...randcolor, ...randcolor];
+                } else {
+                    color_data = [...p.color, ...p.color, ...p.color];
+                }
                 jsarr_color.push(...color_data);
             }
         }
@@ -466,8 +464,6 @@ class Polygon extends Primitive {
         for (const p of this.list) {
             const vertices = p.ordered_vertices.slice();
             vertices.push(vertices[0]);
-
-            // console.log(vertices);
 
             let count = 0;
             for (let i = 0; i < vertices.length-1; i++) {
@@ -699,6 +695,7 @@ function get_elementos() {
         "linha_count": document.querySelector("#linha_count"),
         "poligono_count": document.querySelector("#poligono_count"),
         "msg": document.querySelector("#msg"),
+        "debug_tri": document.querySelector("#debug_tri"),
         "botoes": {
             "point": document.querySelector("#btn_ponto"),
             "line": document.querySelector("#btn_linha"),
@@ -1058,6 +1055,16 @@ function init_keyboard(refs, controle) {
     });
 }
 
+/**
+ * Função utilitária que gera números aleatórios baseados numa seed
+ * Fonte: https://stackoverflow.com/a/19303725/1694726
+ */
+var seed = 1 // global
+function random() {
+    var x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+}
+
 function main()
 {
     // Inicialização
@@ -1087,6 +1094,9 @@ function main()
 
 function draw_scene(gl, program, refs) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // Ativa/Desativa debud de triângulos
+    Polygon.debug_tri = refs.debug_tri.checked;
 
     // Desenha todos os polígonos, linhas, e pontos
     Polygon.draw();
