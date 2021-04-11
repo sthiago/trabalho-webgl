@@ -510,12 +510,6 @@ class Polygon extends Primitive {
         return (l1>0 && l2>0  && l3>0) || (l1<0 && l2<0 && l3<0);
     }
 
-    // Retorna true se os 3 pontos são colineares
-    are_collinear(p1, p2, p3) {
-        const test = p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) +  p3.x * (p1.y - p2.y);
-        return test == 0;
-    }
-
     // Retorna true se o ângulo p1p2p3 em relação a cm for menor do que 180
     is_p2_convex(xcm, ycm, p1, p2, p3) {
         // Vetor p2->p1
@@ -587,72 +581,31 @@ class Polygon extends Primitive {
      * Fonte: https://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
      */
     triangulate() {
-        // console.log("triangulate()");
-        // return;
         const points = this.ordered_vertices.slice();
 
         this.triangles = [];
         if (points.length < 3) return;
-        // console.log("points.length >= 3");
 
-        let bug_count = 0;
+        while (points.length > 3) {
 
-        whiletri: while (points.length > 3) {
-            // console.log("while -- points.length > 3", points.length);
-
-            if (bug_count++ > 100) {
-                console.log("LOOP INFINITO");
-                //break;
-            }
-
-            let ciclo_completo = false;
             outertrifor: for (let i = 0;; i++) {
-                // console.log("outertrifor -- i = ", i);
-                // Se i%points.length == 0 mas i!=0, significa que eu já iterei todos
-                // os pontos e não achei uma orelha
-                // console.log(i, i%points.length);
-                if (i != 0 && i%points.length == 0) {
-                    console.log(ciclo_completo);
-                    ciclo_completo = true;
-                }
-
                 const [ p1, p2, p3 ] = [
                     points[(i+0)%(points.length)],
                     points[(i+1)%(points.length)],
                     points[(i+2)%(points.length)],
                 ];
 
-                // Se eu já tiver tentado triangular "naturalmente" mas não tiver con-
-                // seguido, eu vou remover pontos adjacentes e colineares na esperança
-                // de conseguir triangular assim
-                if (ciclo_completo) {
-                    console.log("ciclo completo")
-                    if (this.are_collinear(p1, p2, p3)) {
-                        console.log("SÃO COLINEARES VOU TIRAR O P2")
-                        console.log(points);
-                        points.splice(points.indexOf(p2), 1);
-                        console.log(points);
-                        continue whiletri;
+                // Se algum dos outros pontos do polígono está dentro de p1p2p3, então
+                // p1p2p3 não é uma "orelha".
+                const outros_pontos = points.filter(p => ![ p1, p2, p3 ].includes(p));
+                for (const outro_p of outros_pontos) {
+                    if (this.p_inside_tri(outro_p.x, outro_p.y, p1, p2, p3)) {
+                        continue outertrifor;
                     }
                 }
 
-                // Se algum dos outros pontos do triângulo está dentro de p1p2p3, então
-                // p1p2p3 não é uma orelha -- só faz esse teste se p1p2p3 não forem
-                // colineares
-                if (!this.are_collinear(p1, p2, p3)) {
-                    const outros_pontos = points.filter(p => ![ p1, p2, p3 ].includes(p));
-                    for (const outro_p of outros_pontos) {
-                        if (this.p_inside_tri(outro_p.x, outro_p.y, p1, p2, p3)) {
-                            continue outertrifor;
-                        }
-                    }
-                }
-
-                // FIXME comentário
-                // Se p2 mais longe do CM do que p1 e p3, é uma orelha. Então adiciona o
-                // triângulo p1p2p3 e remove p2 da lista de pontos.
+                // Testa se p2 é convexo calculando os ângulos entre os vetores
                 if (this.is_p2_convex(this.xcm, this.ycm, p1, p2, p3)) {
-                    // console.log("orelha!", p1, p2, p3);
                     this.triangles.push([p1, p2, p3]);
                     points.splice(points.indexOf(p2), 1);
                     break outertrifor;
@@ -660,13 +613,9 @@ class Polygon extends Primitive {
             }
         }
 
-        // console.log("saiu do while -- points.length <= 3", points.length);
-
-        if (points.length == 3) {
-            // Adiciona o último triângulo
-            const [ p1, p2, p3 ] = [ points[0], points[1], points[2] ];
-            this.triangles.push([p1, p2, p3]);
-        }
+        // Adiciona o último triângulo
+        const [ p1, p2, p3 ] = [ points[0], points[1], points[2] ];
+        this.triangles.push([p1, p2, p3]);
     }
 
     add_vertex(x, y) {
@@ -824,19 +773,6 @@ function finaliza_polygon(refs, controle) {
     polygon_tmp.sort_vertices();
     polygon_tmp.triangulate();
 
-    // FIXME: debugando triangulação
-    let i;
-    for (i = 0; i < polygon_tmp.ordered_vertices.length-1; i++) {
-        console.log("oi");
-        const tmp1 = polygon_tmp.ordered_vertices[i];
-        const tmp2 = polygon_tmp.ordered_vertices[i+1];
-        new Line(tmp1.x, tmp1.y, tmp2.x, tmp2.y);
-    }
-    new Line(
-        polygon_tmp.ordered_vertices[i].x, polygon_tmp.ordered_vertices[i].y,
-        polygon_tmp.ordered_vertices[0].x, polygon_tmp.ordered_vertices[0].y
-    );
-
     // Se o polígono sendo desenhado tiver menos do que 3 vértices (lembrar que o último
     // foi removido), significa que ele não é um polígono, então deve ser deletado.
     if (polygon_tmp.vertices.length/2 < 3) {
@@ -923,11 +859,13 @@ function init_mouse(refs, controle) {
 
         // Se estiver no modo de seleção, desenha caixa ao passar em cima dos objetos
         if (controle.ferramenta == "select") {
-            const obj_sel = Point.pick(mouseX, mouseY)
-                || Line.pick(mouseX, mouseY)
-                || Polygon.pick(mouseX, mouseY);
+            // const obj_sel = Point.pick(mouseX, mouseY)
+            //     || Line.pick(mouseX, mouseY)
+            //     || Polygon.pick(mouseX, mouseY);
 
-            if (obj_sel) {
+            const obj_sel = Polygon.pick(mouseX, mouseY);
+
+            if (obj_sel && obj_sel instanceof Polygon) {
                 refs.msg.textContent = "SELECTED";
                 // console.log(obj_sel);
             } else {
