@@ -461,7 +461,7 @@ class Polygon extends Primitive {
     }
 
     static pick(xm, ym) {
-        for (const p of this.list) {
+        for (const p of this.list.slice().reverse()) {
             const vertices = p.ordered_vertices.slice();
             vertices.push(vertices[0]);
 
