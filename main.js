@@ -716,6 +716,10 @@ function get_elementos() {
         "poligono_count": document.querySelector("#poligono_count"),
         "msg": document.querySelector("#msg"),
         "debug_tri": document.querySelector("#debug_tri"),
+        "slider-rot": document.querySelector("#slider-rot"),
+        "slider-esc": document.querySelector("#slider-esc"),
+        "slider-rot-div": document.querySelector("#slider-rot-div"),
+        "slider-esc-div": document.querySelector("#slider-esc-div"),
         "botoes": {
             "point": document.querySelector("#btn_ponto"),
             "line": document.querySelector("#btn_linha"),
@@ -831,6 +835,266 @@ function finaliza_polygon(refs, controle) {
     controle.polygon_first_line = undefined;
 }
 
+/** Função que lida com o evento mousemove do mouse */
+function mousemove_handler(e, refs, controle) {
+    const rect = refs.canvas.getBoundingClientRect();
+
+    // O -1 é da borda de 1px
+    controle.mouseX = e.clientX - rect.left - 1;
+    controle.mouseY = e.clientY - rect.top - 1;
+
+    const mouseX = controle.mouseX;
+    const mouseY = controle.mouseY;
+
+    // Atualiza texto da posição do mouse
+    refs.mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
+
+    // Efeito de rubber band -- atualiza posição do último vértice da linha/polígono
+    const line_tmp = controle.line_tmp;
+    const polygon_tmp = controle.polygon_tmp;
+    const polygon_first_line = controle.polygon_first_line;
+    if (line_tmp != undefined) {
+        line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
+    }
+    if (polygon_tmp != undefined) {
+        polygon_tmp.update_last_vertex(mouseX, mouseY);
+    }
+    if (polygon_first_line != undefined) {
+        polygon_first_line.set_position(
+            polygon_first_line.x1, polygon_first_line.y1, mouseX, mouseY);
+    }
+
+    // Modo de seleção: hoverbox e translação por arrastamento
+    if (controle.ferramenta == "select") {
+        // Ordem de prioridade de seleção: primeiro se verifica se há um objeto de fato
+        // selecionado. Se não houver, faz pick de ponto, linha, ou polígono nessa ordem
+        const obj_sel = controle.selected_obj
+            || Point.pick(mouseX, mouseY)
+            || Line.pick(mouseX, mouseY)
+            || Polygon.pick(mouseX, mouseY);
+
+        // Se nada estiver selecionado ou em hover, não faz nada. Obs: se depois tiver
+        // outra ferramenta que precise de mousemove, não poderia dar return aqui
+        if (obj_sel == undefined) {
+            // Remove hoverbox se ela existir e remove referência do hovered_obj
+            if (controle.hoverbox != undefined) {
+                controle.hoverbox.delete();
+                controle.hoverbox = undefined;
+                controle.hovered_obj = undefined;
+            }
+            return;
+        }
+
+        // Ignora se obj_sel for uma das linhas da hoverbox
+        if (
+            controle.hoverbox != undefined
+            && controle.hoverbox.lines.includes(obj_sel)
+        ) {
+            return;
+        }
+
+        // Seta o objeto como sendo o atualmente sob o mouse (hover)
+        controle.hovered_obj = obj_sel;
+
+        // Define parâmetros da hoverbox dependendo do tipo de objeto
+        let hoverbox_params;
+        if (obj_sel instanceof Point) {
+            hoverbox_params = [ obj_sel.x, obj_sel.y, 20, 20 ];
+        } else if (obj_sel instanceof Line || obj_sel instanceof Polygon) {
+            const bbox = obj_sel.boundingbox();
+            hoverbox_params = [ bbox.xc, bbox.yc, bbox.w + 20, bbox.h + 20 ];
+        }
+
+        // Cria hoverbox se ela não existir e atualiza se existir
+        if (controle.hoverbox == undefined) {
+            controle.hoverbox = new Box(...hoverbox_params);
+        } else {
+            controle.hoverbox.set_lines(...hoverbox_params);
+        }
+    }
+}
+
+function mousedrag_handler(e, refs, controle) {
+    // Se existir um objeto "de fato" selecionado e no modo "arrastando", usa o
+    // movimento como translação
+    if (
+        controle.ferramenta == "select"
+        && controle.selected_obj != undefined
+    ) {
+        controle.selected_obj.translate(e.movementX, e.movementY);
+    }
+}
+
+/** Função que lida com o evento mousedown do mouse */
+function mousedown_handler(e, refs, controle) {
+    // Não faz nada com ctrl nem shift
+    if (e.ctrlKey || e.shiftKey) { return; }
+
+    const mouseX = controle.mouseX;
+    const mouseY = controle.mouseY;
+
+    // Desenha linha
+    if (
+        controle.ferramenta == "line"
+        && controle.line_tmp == undefined
+    ) {
+        controle.line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
+        controle.line_tmp.set_color(...controle.cor);
+        return;
+    }
+
+    // Seleciona o objeto
+    if (
+        controle.ferramenta == "select"
+        && controle.hovered_obj != undefined
+    ) {
+        // Seta o objeto como arrastando, pra não conflitar com clique
+        controle.arrastando = true;
+
+        // Escurece hoverbox
+        controle.hoverbox.set_escuro();
+
+        // Seta ele como selecionado de fato
+        controle.selected_obj = controle.hovered_obj;
+    }
+}
+
+/** Função que lida com o evento mousedown do mouse */
+function mouseup_handler(e, refs, controle) {
+    // Finalização de desenho de linha
+    if (
+        controle.ferramenta == "line"
+        && controle.line_tmp != undefined
+    ) {
+        const line_tmp = controle.line_tmp;
+
+        // Deleta a linha se as 2 extremidades forem coincidentes (o usuário apenas
+        // clicou em vez de segurar a arrastar o mouse)
+        if (line_tmp.x1 == line_tmp.x2 && line_tmp.y1 == line_tmp.y2) {
+            line_tmp.delete();
+        }
+
+        // "Comita" a linha. Remove a referência da linha temporária de trabalho,
+        // mas a instância dela ainda está na lista linhas (Line.list)
+        controle.line_tmp = undefined;
+
+        return;
+    }
+
+    // "Soltou" o mouse depois de arrastar objeto selecionado
+    if (
+        controle.ferramenta == "select"
+        && controle.selected_obj != undefined
+        && controle.arrastando == true
+    ) {
+        controle.arrastando = false;
+
+        // Clareia hoverbox
+        controle.hoverbox.set_claro();
+
+        // Desmarca objeto como selecionado
+        controle.selected_obj = undefined;
+    }
+}
+
+/** Função que lida com o evento mousedown do mouse */
+function click_handler(e, refs, controle) {
+    // Não faz nada se o shift estiver pressionado
+    if (e.shiftKey) { return; }
+
+    const mouseX = controle.mouseX;
+    const mouseY = controle.mouseY;
+    const cor = controle.cor;
+
+    // Desenha um ponto
+    if (controle.ferramenta == "point" && !e.ctrlKey) {
+        const p = new Point(mouseX, mouseY);
+        p.set_color(...cor);
+        return;
+    };
+
+    // Começa a desenhar um polígono
+    if (
+        controle.ferramenta == "polygon"
+        && controle.polygon_tmp == undefined
+        && !e.ctrlKey
+    ) {
+        // Cria um polígono
+        const polygon_tmp = controle.polygon_tmp = new Polygon();
+        polygon_tmp.add_vertex(mouseX, mouseY);
+        polygon_tmp.add_vertex(mouseX, mouseY);
+        polygon_tmp.set_color(...cor);
+
+        // Cria uma linha temporária para a primeira aresta do polígono
+        controle.polygon_first_line = new Line(mouseX, mouseY, mouseX, mouseY);
+        controle.polygon_first_line.set_color(...cor);
+
+        // Atualiza mensagem de status
+        refs.msg.textContent = "Aperte ESC para finalizar o polígono ou \
+            Ctrl+Clique para adicionar um último ponto";
+
+        return;
+    }
+
+    // Adiciona pontos ao polígono que está sendo desenhado
+    if (
+        controle.ferramenta == "polygon"
+        && controle.polygon_tmp != undefined
+        && !e.ctrlKey
+    ) {
+        // Adiciona vértice
+        const polygon_tmp = controle.polygon_tmp;
+        polygon_tmp.add_vertex(mouseX, mouseY);
+
+        // Deleta polygon_first_line se ela existir
+        if (controle.polygon_first_line != undefined) {
+            controle.polygon_first_line.delete();
+            controle.polygon_first_line = undefined;
+        }
+
+        return;
+    }
+
+    // Finaliza o polígono sendo desenhado se o usuário clicar segurando CTRL
+    // (Mantém o vértice e finaliza, diferente de apertar ESC)
+    if (
+        controle.ferramenta == "polygon"
+        && controle.polygon_tmp != undefined
+        && e.ctrlKey
+    ) {
+        controle.polygon_tmp = undefined;
+        refs.msg.textContent = "";
+    }
+
+    // Seleciona o objeto hovered
+    if (
+        controle.ferramenta == "select"
+        && controle.hovered_obj != undefined
+        && controle.selected_obj == undefined
+    ) {
+        console.log("seleciona")
+        // Escurece hoverbox
+        controle.hoverbox.set_escuro();
+
+        // Seta ele como selecionado de fato
+        controle.selected_obj = controle.hovered_obj;
+
+    // Desseleciona o objeto
+    } else if (
+        controle.ferramenta == "select"
+        && controle.hovered_obj != undefined
+        && controle.selected_obj != undefined
+        ) {
+        console.log("desseleciona")
+        // Clareia hoverbox
+        controle.hoverbox.set_claro();
+
+        // Desmarca como selecionado
+        controle.selected_obj = undefined;
+    }
+
+}
+
 /** Função que inicializa os botões de ferramenta */
 function init_botoes(refs, controle) {
     const botoes = refs.botoes;
@@ -863,9 +1127,61 @@ function init_botoes(refs, controle) {
     }
 }
 
-/** Função que inicializa o mouse handling */
+/**
+ * Função que inicializa o mouse handling
+ * (Isola os eventos mousedown, mouseup e click)
+ */
 function init_mouse(refs, controle) {
 
+    let is_down = false;
+    let drag_hash;
+
+    refs.canvas.onmousedown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        drag_hash = 0;
+        is_down = true;
+
+        console.log("mousedown");
+        mousedown_handler(e, refs, controle);
+    }
+
+    refs.canvas.onmouseup = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (drag_hash < 5) {
+            console.log("click");
+            click_handler(e, refs, controle);
+        } else {
+            // console.log("mouseup");
+            mouseup_handler(e, refs, controle);
+        }
+
+        is_down = false;
+    }
+
+    refs.canvas.onmousemove = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // console.log("mousemove");
+        mousemove_handler(e, refs, controle);
+
+        drag_hash += Math.abs(e.movementX) + Math.abs(e.movementY);
+
+        if (is_down) {
+            // console.log("mousedrag");
+            mousedrag_handler(e, refs, controle);
+        }
+    }
+
+    // Considera que o botão do mouse foi solto ao sair do canvas
+    refs.canvas.onmouseleave = refs.canvas.onmouseup;
+}
+
+function init_mouse_old(refs, controle) {
     // Movimento do mouse
     refs.canvas.onmousemove = (e) => {
         const rect = refs.canvas.getBoundingClientRect();
@@ -943,7 +1259,7 @@ function init_mouse(refs, controle) {
             }
 
             // Se existir um objeto selecionado, usa o movimento como translação
-            if (controle.selected_obj != undefined)    {
+            if (controle.selected_obj != undefined && controle.arrastando) {
                 controle.selected_obj.translate(e.movementX, e.movementY);
             }
         }
@@ -1018,6 +1334,15 @@ function init_mouse(refs, controle) {
             controle.polygon_tmp = undefined;
             refs.msg.textContent = "";
         }
+
+        // Seleciona o objeto hovered
+        if (!controle.arrastando && controle.hovered_obj != undefined) {
+            // Escurece hoverbox
+            controle.hoverbox.set_escuro();
+
+            // Seta ele como selecionado de fato
+            controle.selected_obj = controle.hovered_obj;
+        }
     }
 
     // Clicar e arrastar o mouse
@@ -1040,6 +1365,9 @@ function init_mouse(refs, controle) {
 
         // Seleciona o objeto
         if (controle.ferramenta == "select" && controle.hoverbox != undefined) {
+            // Seta o objeto como arrastando, pra não conflitar com clique
+            controle.arrastando = true;
+
             // Escurece hoverbox
             controle.hoverbox.set_escuro();
 
@@ -1069,7 +1397,13 @@ function init_mouse(refs, controle) {
         }
 
         // "Soltou" o mouse
-        if (controle.ferramenta == "select" && controle.hoverbox != undefined) {
+        if (
+            controle.ferramenta == "select"
+            && controle.hoverbox != undefined
+            && controle.arrastando == true
+        ) {
+            controle.arrastando = false;
+
             // Clareia hoverbox
             controle.hoverbox.set_claro();
 
@@ -1120,6 +1454,7 @@ function main()
         "hoverbox": undefined,
         "hovered_obj": undefined,
         "selected_obj": undefined,
+        "arrastando": false,
     }
 
     // Inicializa e configura funcionalidades
@@ -1127,6 +1462,10 @@ function main()
     init_botoes(refs, controle);
     init_mouse(refs, controle);
     init_keyboard(refs, controle);
+
+    // Esconde controles de rotação e escala
+    refs["slider-rot-div"].hidden = true;
+    refs["slider-esc-div"].hidden = true;
 
     window.requestAnimationFrame(() => draw_scene(gl, program, refs));
 }
