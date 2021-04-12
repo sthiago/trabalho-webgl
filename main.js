@@ -835,6 +835,27 @@ function finaliza_polygon(refs, controle) {
     controle.polygon_first_line = undefined;
 }
 
+/**
+ * Efeito de rubber band. Atualiza a posição do último vértice da linha ou do polígono
+ * temporário. Deve ser chamada dentro do handler do mousemove.
+ */
+function rubber_band(mouseX, mouseY, controle) {
+    const line_tmp = controle.line_tmp;
+    const polygon_tmp = controle.polygon_tmp;
+    const polygon_first_line = controle.polygon_first_line;
+
+    if (line_tmp != undefined) {
+        line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
+    }
+    if (polygon_tmp != undefined) {
+        polygon_tmp.update_last_vertex(mouseX, mouseY);
+    }
+    if (polygon_first_line != undefined) {
+        polygon_first_line.set_position(
+            polygon_first_line.x1, polygon_first_line.y1, mouseX, mouseY);
+    }
+}
+
 /** Função que lida com o evento mousemove do mouse */
 function mousemove_handler(e, refs, controle) {
     const rect = refs.canvas.getBoundingClientRect();
@@ -849,20 +870,8 @@ function mousemove_handler(e, refs, controle) {
     // Atualiza texto da posição do mouse
     refs.mouse_position_el.textContent = `mouse_pos: (${mouseX}, ${mouseY})`;
 
-    // Efeito de rubber band -- atualiza posição do último vértice da linha/polígono
-    const line_tmp = controle.line_tmp;
-    const polygon_tmp = controle.polygon_tmp;
-    const polygon_first_line = controle.polygon_first_line;
-    if (line_tmp != undefined) {
-        line_tmp.set_position(line_tmp.x1, line_tmp.y1, mouseX, mouseY);
-    }
-    if (polygon_tmp != undefined) {
-        polygon_tmp.update_last_vertex(mouseX, mouseY);
-    }
-    if (polygon_first_line != undefined) {
-        polygon_first_line.set_position(
-            polygon_first_line.x1, polygon_first_line.y1, mouseX, mouseY);
-    }
+    // Atualiza posição do último vértice do objeto sendo desenhado
+    rubber_band(mouseX, mouseY, controle);
 
     // Modo de seleção: hoverbox e translação por arrastamento
     if (controle.ferramenta == "select") {
