@@ -836,6 +836,30 @@ function finaliza_polygon(refs, controle) {
 }
 
 /**
+ * Função que reseta controles para configurações iniciais e também remove objetos
+ * temporários. Mantém apenas a ferramenta selecionada
+ */
+function reset_controles(refs, controle) {
+    // Deleta objetos temporários
+    if (controle.line_tmp != undefined) controle.line_tmp.delete();
+    if (controle.polygon_tmp != undefined) controle.polygon_tmp.delete();
+    if (controle.polygon_first_line != undefined) controle.polygon_first_line.delete();
+    if (controle.hoverbox != undefined) controle.hoverbox.delete();
+
+    // Reseta valores iniciais
+    controle.cor = refs.cores.preto;
+    controle.line_tmp = undefined;
+    controle.polygon_tmp = undefined;
+    controle.polygon_first_line = undefined;
+    controle.mouseX = undefined;
+    controle.mouseY = undefined;
+    controle.hoverbox = undefined;
+    controle.hovered_obj = undefined;
+    controle.selected_obj = undefined;
+    controle.arrastando = false;
+}
+
+/**
  * Efeito de rubber band. Atualiza a posição do último vértice da linha ou do polígono
  * temporário. Deve ser chamada dentro do handler do mousemove.
  */
@@ -1134,6 +1158,9 @@ function init_botoes(refs, controle) {
 
             // Finaliza polígono, caso exista
             finaliza_polygon(refs, controle);
+
+            // Reseta controle
+            reset_controles(refs, controle);
         }
     }
 
@@ -1143,6 +1170,7 @@ function init_botoes(refs, controle) {
         Line.list.length = 0;
         Polygon.list.length = 0;
         finaliza_polygon(refs, controle);
+        reset_controles(refs, controle);
     }
 }
 
