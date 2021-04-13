@@ -1081,12 +1081,17 @@ function click_handler(e, refs, controle) {
         && controle.hovered_obj != undefined
         && controle.selected_obj == undefined
     ) {
-        console.log("seleciona")
         // Escurece hoverbox
         controle.hoverbox.set_escuro();
 
         // Seta ele como selecionado de fato
         controle.selected_obj = controle.hovered_obj;
+
+        // Habilita transformações
+        if (!(controle.selected_obj instanceof Point)) {
+            refs["slider-rot-div"].hidden = false;
+            refs["slider-esc-div"].hidden = false;
+        }
 
     // Desseleciona o objeto
     } else if (
@@ -1094,12 +1099,17 @@ function click_handler(e, refs, controle) {
         && controle.hovered_obj != undefined
         && controle.selected_obj != undefined
         ) {
-        console.log("desseleciona")
         // Clareia hoverbox
         controle.hoverbox.set_claro();
 
         // Desmarca como selecionado
         controle.selected_obj = undefined;
+
+        // Desabilita transformações
+        if (!(controle.selected_obj instanceof Point)) {
+            refs["slider-rot-div"].hidden = true;
+            refs["slider-esc-div"].hidden = true;
+        }
     }
 
 }
@@ -1152,7 +1162,7 @@ function init_mouse(refs, controle) {
         drag_hash = 0;
         is_down = true;
 
-        console.log("mousedown");
+        // console.log("mousedown");
         mousedown_handler(e, refs, controle);
     }
 
@@ -1161,7 +1171,7 @@ function init_mouse(refs, controle) {
         e.stopPropagation();
 
         if (drag_hash < 5) {
-            console.log("click");
+            // console.log("click");
             click_handler(e, refs, controle);
         } else {
             // console.log("mouseup");
