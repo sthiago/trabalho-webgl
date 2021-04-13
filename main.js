@@ -924,11 +924,26 @@ function mousemove_handler(e, refs, controle) {
 }
 
 function mousedrag_handler(e, refs, controle) {
-    // Se existir um objeto "de fato" selecionado e no modo "arrastando", usa o
-    // movimento como translação
+    // Se existir um objeto hovered e eu comecei a arrastar, configura para a translação
+    if (
+        controle.ferramenta == "select"
+        && controle.hovered_obj != undefined
+        && controle.selected_obj == undefined
+    ) {
+        controle.arrastando = true;
+
+        // Escurece hoverbox
+        controle.hoverbox.set_escuro();
+
+        // Seta ele como selecionado de fato
+        controle.selected_obj = controle.hovered_obj;
+    }
+
+    // Se estou arrastando e existe um objeto selecionado, translada
     if (
         controle.ferramenta == "select"
         && controle.selected_obj != undefined
+        && controle.arrastando == true
     ) {
         controle.selected_obj.translate(e.movementX, e.movementY);
     }
@@ -950,21 +965,6 @@ function mousedown_handler(e, refs, controle) {
         controle.line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
         controle.line_tmp.set_color(...controle.cor);
         return;
-    }
-
-    // Seleciona o objeto
-    if (
-        controle.ferramenta == "select"
-        && controle.hovered_obj != undefined
-    ) {
-        // Seta o objeto como arrastando, pra não conflitar com clique
-        controle.arrastando = true;
-
-        // Escurece hoverbox
-        controle.hoverbox.set_escuro();
-
-        // Seta ele como selecionado de fato
-        controle.selected_obj = controle.hovered_obj;
     }
 }
 
