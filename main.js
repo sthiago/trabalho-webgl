@@ -355,19 +355,21 @@ class Line extends Primitive {
     constructor(x1, y1, x2, y2) {
         super();
 
-        this.x1 = x1;
-        this.y1 = y1;
-        this.x2 = x2;
-        this.y2 = y2;
+        // Coordenadas "originais" são usadas para calcular transformações lineares
+        this.x1 = this.x1_orig = x1;
+        this.y1 = this.y1_orig = y1;
+        this.x2 = this.x2_orig = x2;
+        this.y2 = this.y2_orig = y2;
 
+        this.rotation = 0;
         this.constructor.list.push(this);
     }
 
     set_position(x1, y1, x2, y2) {
-        this.x1 = x1;
-        this.y1 = y1;
-        this.x2 = x2;
-        this.y2 = y2;
+        this.x1 = this.x1_orig = x1;
+        this.y1 = this.y1_orig = y1;
+        this.x2 = this.x2_orig = x2;
+        this.y2 = this.y2_orig = y2;
     }
 
     boundingbox() {
@@ -384,6 +386,25 @@ class Line extends Primitive {
 
     translate(dx, dy) {
         this.set_position(this.x1 + dx, this.y1 + dy, this.x2 + dx, this.y2 + dy);
+    }
+
+    rotate(graus) {
+        const theta = graus * Math.PI / 180;
+        this.rotation = graus;
+
+        const xc = (this.x1_orig + this.x2_orig) / 2;
+        const yc = (this.y1_orig + this.y2_orig) / 2;
+
+        const cos = Math.cos(theta).toFixed(3);
+        const sin = Math.sin(theta).toFixed(3);
+
+        // P1
+        this.x1 = xc + (this.x1_orig - xc) * cos - (this.y1_orig - yc) * sin;
+        this.y1 = yc + (this.x1_orig - xc) * sin + (this.y1_orig - yc) * cos;
+
+        // P2
+        this.x2 = xc + (this.x2_orig - xc) * cos - (this.y2_orig - yc) * sin;
+        this.y2 = yc + (this.x2_orig - xc) * sin + (this.y2_orig - yc) * cos;
     }
 }
 
@@ -716,10 +737,10 @@ function get_elementos() {
         "poligono_count": document.querySelector("#poligono_count"),
         "msg": document.querySelector("#msg"),
         "debug_tri": document.querySelector("#debug_tri"),
-        "slider-rot": document.querySelector("#slider-rot"),
-        "slider-esc": document.querySelector("#slider-esc"),
-        "slider-rot-div": document.querySelector("#slider-rot-div"),
-        "slider-esc-div": document.querySelector("#slider-esc-div"),
+        "slider_rot": document.querySelector("#slider-rot"),
+        "slider_esc": document.querySelector("#slider-esc"),
+        "slider_rot_div": document.querySelector("#slider-rot-div"),
+        "slider_esc_div": document.querySelector("#slider-esc-div"),
         "botoes": {
             "point": document.querySelector("#btn_ponto"),
             "line": document.querySelector("#btn_linha"),
@@ -837,7 +858,7 @@ function finaliza_polygon(refs, controle) {
 
 /**
  * Função que reseta controles para configurações iniciais e também remove objetos
- * temporários. Mantém apenas a ferramenta selecionada
+ * temporários. Mantém apenas a ferramenta selecionada e a cor
  */
 function reset_controles(refs, controle) {
     // Deleta objetos temporários
@@ -846,8 +867,11 @@ function reset_controles(refs, controle) {
     if (controle.polygon_first_line != undefined) controle.polygon_first_line.delete();
     if (controle.hoverbox != undefined) controle.hoverbox.delete();
 
+    // Esconde sliders
+    refs.slider_rot_div.hidden = true;
+    refs.slider_esc_div.hidden = true;
+
     // Reseta valores iniciais
-    controle.cor = refs.cores.preto;
     controle.line_tmp = undefined;
     controle.polygon_tmp = undefined;
     controle.polygon_first_line = undefined;
@@ -1113,8 +1137,11 @@ function click_handler(e, refs, controle) {
 
         // Habilita transformações
         if (!(controle.selected_obj instanceof Point)) {
-            refs["slider-rot-div"].hidden = false;
-            refs["slider-esc-div"].hidden = false;
+            refs.slider_rot_div.hidden = false;
+            refs.slider_esc_div.hidden = false;
+
+            // Seta rotação com o valor atual do objeto
+            refs.slider_rot.value = controle.selected_obj.rotation;
         }
 
     // Desseleciona o objeto
@@ -1131,8 +1158,8 @@ function click_handler(e, refs, controle) {
 
         // Desabilita transformações
         if (!(controle.selected_obj instanceof Point)) {
-            refs["slider-rot-div"].hidden = true;
-            refs["slider-esc-div"].hidden = true;
+            refs.slider_rot_div.hidden = true;
+            refs.slider_esc_div.hidden = true;
         }
     }
 
@@ -1238,6 +1265,25 @@ function init_keyboard(refs, controle) {
     });
 }
 
+/** Função que inicializa os sliders de transformações */
+function init_sliders(refs, controle) {
+    refs.slider_rot.oninput = (e) => {
+        const angulo = refs.slider_rot.value;
+        if (
+            controle.selected_obj != undefined
+            && !(controle.selected_obj instanceof Point)
+        ) {
+            // Seta rotação
+            controle.selected_obj.rotate(angulo);
+
+            // Atualiza hoverbox
+            const bbox = controle.selected_obj.boundingbox();
+            hoverbox_params = [ bbox.xc, bbox.yc, bbox.w + 20, bbox.h + 20 ];
+            controle.hoverbox.set_lines(...hoverbox_params);
+        }
+    }
+}
+
 /**
  * Função utilitária que gera números aleatórios baseados numa seed
  * Fonte: https://stackoverflow.com/a/19303725/1694726
@@ -1274,10 +1320,11 @@ function main()
     init_botoes(refs, controle);
     init_mouse(refs, controle);
     init_keyboard(refs, controle);
+    init_sliders(refs, controle);
 
     // Esconde controles de rotação e escala
-    refs["slider-rot-div"].hidden = true;
-    refs["slider-esc-div"].hidden = true;
+    refs.slider_rot_div.hidden = true;
+    refs.slider_esc_div.hidden = true;
 
     window.requestAnimationFrame(() => draw_scene(gl, program, refs));
 }
