@@ -1203,6 +1203,9 @@ function click_handler(e, refs, controle) {
 
             // Seta rotação com o valor atual do objeto
             refs.slider_rot.value = controle.selected_obj.rotation;
+
+            // Seta escala com o valor atual do objeto
+            refs.slider_esc.value = controle.selected_obj.escala;
         }
 
         // Seleciona cor do objeto na paleta
