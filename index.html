@@ -154,7 +154,7 @@
     <div class="group">
         <input id="debug_tri" type="checkbox"> Mostrar triângulos (debug) <br>
     </div>
-    <div class="group">
+    <div id="selected-controles" class="group">
         <div id="slider-rot-div">
             <span class="rotulo">Rotação:</span>
             <span class="valor-slider">-180&deg;</span>
@@ -167,6 +167,7 @@
             <input type="range" min="0.25" max="4" step="0.05" value="1" class="slider" id="slider-esc">
             <span class="valor-slider">4x</span>
         </div>
+        <button id="btn_apagar">Apagar</button>
     </div>
 
     <script src="initShaders.js"></script>

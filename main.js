@@ -800,8 +800,7 @@ function get_elementos() {
         "debug_tri": document.querySelector("#debug_tri"),
         "slider_rot": document.querySelector("#slider-rot"),
         "slider_esc": document.querySelector("#slider-esc"),
-        "slider_rot_div": document.querySelector("#slider-rot-div"),
-        "slider_esc_div": document.querySelector("#slider-esc-div"),
+        "selected_controles": document.querySelector("#selected-controles"),
         "botoes": {
             "point": document.querySelector("#btn_ponto"),
             "line": document.querySelector("#btn_linha"),
@@ -809,6 +808,7 @@ function get_elementos() {
             "select": document.querySelector("#btn_selecionar"),
         },
         "btn_limpar": document.querySelector("#btn_limpar"),
+        "btn_apagar": document.querySelector("#btn_apagar"),
         "cores_elms": {
             'vermelho' : document.querySelector("#cor_vermelho"),
             'amarelo'  : document.querySelector("#cor_amarelo"),
@@ -933,9 +933,8 @@ function reset_controles(refs, controle) {
     if (controle.polygon_first_line != undefined) controle.polygon_first_line.delete();
     if (controle.hoverbox != undefined) controle.hoverbox.delete();
 
-    // Esconde sliders
-    refs.slider_rot_div.hidden = true;
-    refs.slider_esc_div.hidden = true;
+    // Esconde controles de objeto selecionado
+    refs.selected_controles.hidden = true;
 
     // Reseta valores iniciais
     controle.line_tmp = undefined;
@@ -1203,8 +1202,7 @@ function click_handler(e, refs, controle) {
 
         // Habilita transformações
         if (!(controle.selected_obj instanceof Point)) {
-            refs.slider_rot_div.hidden = false;
-            refs.slider_esc_div.hidden = false;
+            refs.selected_controles.hidden = false;
 
             // Seta rotação com o valor atual do objeto
             refs.slider_rot.value = controle.selected_obj.rotation;
@@ -1235,8 +1233,7 @@ function click_handler(e, refs, controle) {
 
         // Desabilita transformações
         if (!(controle.selected_obj instanceof Point)) {
-            refs.slider_rot_div.hidden = true;
-            refs.slider_esc_div.hidden = true;
+            refs.selected_controles.hidden = true;
         }
     }
 
@@ -1275,6 +1272,18 @@ function init_botoes(refs, controle) {
         Polygon.list.length = 0;
         finaliza_polygon(refs, controle);
         reset_controles(refs, controle);
+    }
+
+    // Configuração do botão de apagar objeto
+    refs.btn_apagar.onclick = () => {
+        if (controle.selected_obj == undefined) return;
+
+        controle.selected_obj.delete();
+        controle.selected_obj = undefined;
+        controle.hovered_obj = undefined;
+        controle.hoverbox.delete();
+        controle.hoverbox = undefined;
+        refs.selected_controles.hidden = true;
     }
 }
 
@@ -1417,9 +1426,8 @@ function main()
     init_keyboard(refs, controle);
     init_sliders(refs, controle);
 
-    // Esconde controles de rotação e escala
-    refs.slider_rot_div.hidden = true;
-    refs.slider_esc_div.hidden = true;
+    // Esconde controles de objeto selecionado
+    refs.selected_controles.hidden = true;
 
     window.requestAnimationFrame(() => draw_scene(gl, program, refs));
 }
