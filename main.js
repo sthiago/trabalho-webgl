@@ -982,6 +982,7 @@ function get_elementos() {
         "slider_rot": document.querySelector("#slider-rot"),
         "slider_esc": document.querySelector("#slider-esc"),
         "selected_controles": document.querySelector("#selected-controles"),
+        "selected_controles2": document.querySelector("#selected-controles2"),
         "botoes": {
             "point": document.querySelector("#btn_ponto"),
             "line": document.querySelector("#btn_linha"),
@@ -1117,6 +1118,7 @@ function reset_controles(refs, controle) {
 
     // Esconde controles de objeto selecionado
     refs.selected_controles.hidden = true;
+    refs.selected_controles2.hidden = true;
 
     // Reseta valores iniciais
     controle.line_tmp = undefined;
@@ -1317,6 +1319,7 @@ function mouseup_handler(e, refs, controle) {
         controle.hoverbox = undefined;
         refs.btn_espelhar.className = "";
         refs.selected_controles.hidden = true;
+        refs.selected_controles2.hidden = true;
     }
 
     // "Soltou" o mouse depois de arrastar objeto selecionado
@@ -1419,12 +1422,15 @@ function click_handler(e, refs, controle) {
         // Habilita transformações
         if (!(controle.selected_obj instanceof Point)) {
             refs.selected_controles.hidden = false;
+            refs.selected_controles2.hidden = false;
 
             // Seta rotação com o valor atual do objeto
             refs.slider_rot.value = controle.selected_obj.rotation;
 
             // Seta escala com o valor atual do objeto
             refs.slider_esc.value = controle.selected_obj.escala;
+        } else {
+            refs.selected_controles2.hidden = false;
         }
 
         // Seleciona cor do objeto na paleta
@@ -1448,9 +1454,8 @@ function click_handler(e, refs, controle) {
         controle.selected_obj = undefined;
 
         // Desabilita transformações
-        if (!(controle.selected_obj instanceof Point)) {
-            refs.selected_controles.hidden = true;
-        }
+        refs.selected_controles.hidden = true;
+        refs.selected_controles2.hidden = true;
     }
 
 }
@@ -1500,6 +1505,7 @@ function init_botoes(refs, controle) {
         controle.hoverbox.delete();
         controle.hoverbox = undefined;
         refs.selected_controles.hidden = true;
+        refs.selected_controles2.hidden = true;
     }
 
     // Configuração do botão de espelhar
@@ -1659,6 +1665,7 @@ function main()
 
     // Esconde controles de objeto selecionado
     refs.selected_controles.hidden = true;
+    refs.selected_controles2.hidden = true;
 
     window.requestAnimationFrame(() => draw_scene(gl, program, refs));
 }
