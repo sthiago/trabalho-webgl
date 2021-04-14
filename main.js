@@ -835,8 +835,100 @@ class Polygon extends Primitive {
             }
         }
     }
+
+    mirror(rx1, ry1, rx2, ry2) {
+        // Translada todos os pontos (-rx1, -ry1)
+        let transladados = [];
+        for (let i = 0; i < this.triangles.length; i++) {
+            const t = this.triangles[i];
+            for (let j = 0; j < 3; j++) {
+                if (transladados.includes(t[j])) continue;
+                t[j].x -= rx1;
+                t[j].y -= ry1;
+                transladados.push(t[j]);
             }
         }
+
+        // Encontra ângulo entre a reta e o eixo Ox
+        const theta = Math.atan2(ry2-ry1, rx2-rx1);
+
+        // Rotaciona pontos de -theta
+        let cos = Math.cos(-theta);
+        let sin = Math.sin(-theta);
+
+        let rotacionados = [];
+        for (let i = 0; i < this.triangles.length; i++) {
+            const t = this.triangles[i];
+            for (let j = 0; j < 3; j++) {
+                if (rotacionados.includes(t[j])) continue;
+                const x = t[j].x;
+                const y = t[j].y;
+
+                t[j].x = x * cos - y * sin;
+                t[j].y = x * sin + y * cos;
+
+                rotacionados.push(t[j]);
+            }
+        }
+
+        // Espelha em relação ao eixo Ox
+        const espelhados = [];
+        for (let i = 0; i < this.triangles.length; i++) {
+            const t = this.triangles[i];
+            for (let j = 0; j < 3; j++) {
+                if (espelhados.includes(t[j])) continue;
+
+                t[j].y = -t[j].y;
+
+                espelhados.push(t[j]);
+            }
+        }
+
+        // Rotaciona pontos de +theta
+        cos = Math.cos(theta);
+        sin = Math.sin(theta);
+
+        rotacionados = [];
+        for (let i = 0; i < this.triangles.length; i++) {
+            const t = this.triangles[i];
+            for (let j = 0; j < 3; j++) {
+                if (rotacionados.includes(t[j])) continue;
+                const x = t[j].x;
+                const y = t[j].y;
+
+                t[j].x = x * cos - y * sin;
+                t[j].y = x * sin + y * cos;
+
+                rotacionados.push(t[j]);
+            }
+        }
+
+        // Translada todos os pontos (+rx1, +ry1)
+        transladados = [];
+        for (let i = 0; i < this.triangles.length; i++) {
+            const t = this.triangles[i];
+            for (let j = 0; j < 3; j++) {
+                if (transladados.includes(t[j])) continue;
+                t[j].x += rx1;
+                t[j].y += ry1;
+                transladados.push(t[j]);
+            }
+        }
+
+        // Atualiza triangulos "originais"
+        for (let i = 0; i < this.triangles.length; i++) {
+            const t = this.triangles[i];
+            const t_orig = this.orig_triangles[i];
+            for (let j = 0; j < 3; j++) {
+                t_orig[j].x = t[j].x;
+                t_orig[j].y = t[j].y;
+            }
+        }
+
+        // Reseta transformações -- Sem resetar, ele aplica as transformações "de novo"
+        // porque o espelhamento funciona como um tipo de translação
+        this.rotation = 0;
+        this.escala = 1;
     }
 }
 
