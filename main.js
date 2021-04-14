@@ -728,6 +728,8 @@ class Polygon extends Primitive {
             { x: p2.x, y: p2.y },
             { x: p3.x, y: p3.y },
         ]);
+
+        this.update_center();
     }
 
     add_vertex(x, y) {
@@ -763,16 +765,39 @@ class Polygon extends Primitive {
 
     }
 
+    update_center() {
+        let xc = 0, yc = 0;
+        for (const t of this.ordered_vertices) {
+            xc += t.x;
+            yc += t.y;
+        }
+        xc /= this.ordered_vertices.length;
+        yc /= this.ordered_vertices.length;
+
+        this.xc = xc;
+        this.yc = yc;
+    }
+
     translate(dx, dy) {
-        for (let i = 0; i < this.vertices.length-1; i+=2) {
-            this.vertices[i+0] += dx;
-            this.vertices[i+1] += dy;
+        const transladados = [];
+        for (let i = 0; i < this.triangles.length; i++) {
+            const t = this.triangles[i];
+            const t_orig = this.orig_triangles[i];
+            for (let j = 0; j < 3; j++) {
+                // Pula vértices já transladados porque a referência deles é igual
+                if (transladados.includes(t[j])) continue;
+
+                t[j].x += dx;
+                t[j].y += dy;
+
+                t_orig[j].x += dx;
+                t_orig[j].y += dy;
+
+                transladados.push(t[j]);
+            }
         }
 
-        // Acho que seria mais eficiente mover os triângulos. Mas é mais fácil simples-
-        // mente triangular de novo
-        this.sort_vertices();
-        this.triangulate();
+        this.update_center();
         this.transform();
     }
 
@@ -786,26 +811,30 @@ class Polygon extends Primitive {
 
     // Aplica escala e rotação direto nos triângulos
     transform() {
-        // Encontrar centro (xc, yc)
-        let xc = 0, yc = 0;
-        for (let i = 0; i < this.vertices.length-1; i+=2) {
-            xc += this.vertices[i];
-            yc += this.vertices[i+1];
-        }
-        xc /= this.vertices.length/2;
-        yc /= this.vertices.length/2;
+        const [ xc, yc ] = [ this.xc, this.yc ];
 
         // Rotação e escala
         const theta = this.rotation * Math.PI / 180;
         const cos = Math.cos(theta);
         const sin = Math.sin(theta);
 
+        const rotacionados_escalados = [];
         for (let i = 0; i < this.triangles.length; i++) {
             const t = this.triangles[i];
             const t_orig = this.orig_triangles[i];
             for (let j = 0; j < 3; j++) {
-                t[j].x = xc + this.escala * ((t_orig[j].x - xc) * cos - (t_orig[j].y - yc) * sin);
-                t[j].y = yc + this.escala * ((t_orig[j].x - xc) * sin + (t_orig[j].y - yc) * cos);
+                if (rotacionados_escalados.includes(t[j])) continue;
+
+                const x = t_orig[j].x;
+                const y = t_orig[j].y;
+
+                t[j].x = xc + this.escala * ((x - xc) * cos - (y - yc) * sin);
+                t[j].y = yc + this.escala * ((x - xc) * sin + (y - yc) * cos);
+
+                rotacionados_escalados.push(t[j]);
+            }
+        }
+    }
             }
         }
     }
