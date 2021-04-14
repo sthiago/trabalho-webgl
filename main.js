@@ -1256,35 +1256,6 @@ function mousemove_handler(e, refs, controle) {
 }
 
 function mousedrag_handler(e, refs, controle) {
-    // Se existir um objeto hovered e eu comecei a arrastar, configura para a translação
-    if (
-        controle.ferramenta == "select"
-        && controle.hovered_obj != undefined
-        && controle.selected_obj == undefined
-    ) {
-        controle.arrastando = true;
-
-        // Escurece hoverbox
-        controle.hoverbox.set_escuro();
-
-        // Seta ele como selecionado de fato
-        controle.selected_obj = controle.hovered_obj;
-    }
-
-    // Se estou arrastando e existe um objeto selecionado, translada
-    if (
-        controle.ferramenta == "select"
-        && controle.selected_obj != undefined
-        && controle.arrastando == true
-    ) {
-        controle.selected_obj.translate(e.movementX, e.movementY);
-    }
-}
-
-/** Função que lida com o evento mousedown do mouse */
-function mousedown_handler(e, refs, controle) {
-    // Não faz nada com ctrl nem shift
-    if (e.ctrlKey || e.shiftKey) { return; }
 
     const mouseX = controle.mouseX;
     const mouseY = controle.mouseY;
@@ -1307,6 +1278,30 @@ function mousedown_handler(e, refs, controle) {
         controle.line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
         controle.line_tmp.set_color(140, 140, 140, 200);
         return;
+    }
+
+    // Se existir um objeto hovered e eu comecei a arrastar, configura para a translação
+    if (
+        controle.ferramenta == "select"
+        && controle.hovered_obj != undefined
+        && controle.selected_obj == undefined
+    ) {
+        controle.arrastando = true;
+
+        // Escurece hoverbox
+        controle.hoverbox.set_escuro();
+
+        // Seta ele como selecionado de fato
+        controle.selected_obj = controle.hovered_obj;
+    }
+
+    // Se estou arrastando e existe um objeto selecionado, translada
+    if (
+        controle.ferramenta == "select"
+        && controle.selected_obj != undefined
+        && controle.arrastando == true
+    ) {
+        controle.selected_obj.translate(e.movementX, e.movementY);
     }
 }
 
@@ -1574,9 +1569,6 @@ function init_mouse(refs, controle) {
 
         drag_hash = 0;
         is_down = true;
-
-        // console.log("mousedown");
-        mousedown_handler(e, refs, controle);
     }
 
     refs.canvas.onmouseup = (e) => {
