@@ -397,7 +397,7 @@ class Line extends Primitive {
         this.escala = fator;
     }
 
-    // aplica escala e rotação
+    // Aplica escala e rotação
     transform() {
         const xc = (this.x1_orig + this.x2_orig) / 2;
         const yc = (this.y1_orig + this.y2_orig) / 2;
@@ -416,6 +416,52 @@ class Line extends Primitive {
         this.y1 = yc + this.escala * (this.y1 - yc);
         this.x2 = xc + this.escala * (this.x2 - xc);
         this.y2 = yc + this.escala * (this.y2 - yc);
+    }
+
+    // Espelha em relação a uma reta
+    mirror(rx1, ry1, rx2, ry2) {
+        let [x1, y1, x2, y2] = [this.x1, this.y1, this.x2, this.y2];
+
+        // Translada (-rx1, -ry1)
+        x1 -= rx1; y1 -= ry1;
+        x2 -= rx1; y2 -= ry1;
+
+        // Encontra ângulo entre a reta e o eixo Ox
+        const theta = Math.atan2(ry2-ry1, rx2-rx1);
+
+        // Rotaciona pontos de -theta
+        let cos = Math.cos(-theta);
+        let sin = Math.sin(-theta);
+
+        let tmp_x1 = x1 * cos - y1 * sin;
+        let tmp_y1 = x1 * sin + y1 * cos;
+        let tmp_x2 = x2 * cos - y2 * sin;
+        let tmp_y2 = x2 * sin + y2 * cos;
+
+        // Espelha em relação ao eixo Ox
+        tmp_y1 = -tmp_y1;
+        tmp_y2 = -tmp_y2;
+
+        // Rotaciona pontos de +theta
+        cos = Math.cos(theta);
+        sin = Math.sin(theta);
+
+        x1 = tmp_x1 * cos - tmp_y1 * sin;
+        y1 = tmp_x1 * sin + tmp_y1 * cos;
+        x2 = tmp_x2 * cos - tmp_y2 * sin;
+        y2 = tmp_x2 * sin + tmp_y2 * cos;
+
+        // Translada (+rx1, +ry1)
+        x1 += rx1; y1 += ry1;
+        x2 += rx1; y2 += ry1;
+
+        // Seta posição
+        this.set_position(x1, y1, x2, y2);
+
+        // Reseta transformações -- Sem resetar, ele aplica as transformações "de novo"
+        // porque o espelhamento funciona como um tipo de translação
+        this.rotation = 0;
+        this.escala = 1;
     }
 }
 
@@ -809,6 +855,7 @@ function get_elementos() {
         },
         "btn_limpar": document.querySelector("#btn_limpar"),
         "btn_apagar": document.querySelector("#btn_apagar"),
+        "btn_espelhar": document.querySelector("#btn_espelhar"),
         "cores_elms": {
             'vermelho' : document.querySelector("#cor_vermelho"),
             'amarelo'  : document.querySelector("#cor_amarelo"),
@@ -1079,6 +1126,16 @@ function mousedown_handler(e, refs, controle) {
         controle.line_tmp.set_color(...controle.cor);
         return;
     }
+
+    // Desenha linha de espelhamento
+    if (
+        controle.ferramenta == "mirror"
+        && controle.line_tmp == undefined
+    ) {
+        controle.line_tmp = new Line(mouseX, mouseY, mouseX, mouseY);
+        controle.line_tmp.set_color(140, 140, 140, 200);
+        return;
+    }
 }
 
 /** Função que lida com o evento mousedown do mouse */
@@ -1101,6 +1158,30 @@ function mouseup_handler(e, refs, controle) {
         controle.line_tmp = undefined;
 
         return;
+    }
+
+    // Finalização de espelhamento
+    if (
+        controle.ferramenta == "mirror"
+        && controle.line_tmp != undefined
+        && controle.selected_obj != undefined
+    ) {
+        const [ rx1, ry1, rx2, ry2 ] = [
+            controle.line_tmp.x1,
+            controle.line_tmp.y1,
+            controle.line_tmp.x2,
+            controle.line_tmp.y2
+        ];
+        controle.selected_obj.mirror(rx1, ry1, rx2, ry2);
+        controle.line_tmp.delete();
+        controle.line_tmp = undefined;
+        controle.ferramenta = "select";
+        controle.selected_obj = undefined;
+        controle.hovered_obj = undefined;
+        controle.hoverbox.delete();
+        controle.hoverbox = undefined;
+        refs.btn_espelhar.className = "";
+        refs.selected_controles.hidden = true;
     }
 
     // "Soltou" o mouse depois de arrastar objeto selecionado
@@ -1285,6 +1366,21 @@ function init_botoes(refs, controle) {
         controle.hoverbox = undefined;
         refs.selected_controles.hidden = true;
     }
+
+    // Configuração do botão de espelhar
+    refs.btn_espelhar.onclick = () => {
+        if (controle.selected_obj == undefined) return;
+
+        if (controle.ferramenta != "mirror") {
+            controle.ferramenta = "mirror";
+            refs.btn_espelhar.className = "selected";
+
+        } else {
+            controle.ferramenta = "select";
+            refs.btn_espelhar.className = "";
+        }
+    }
+
 }
 
 /**
