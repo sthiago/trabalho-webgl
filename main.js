@@ -1205,6 +1205,14 @@ function click_handler(e, refs, controle) {
             refs.slider_rot.value = controle.selected_obj.rotation;
         }
 
+        // Seleciona cor do objeto na paleta
+        for (const key of Object.keys(refs.cores)) {
+            if (refs.cores[key].toString() == controle.selected_obj.color.toString()) {
+                refs.cores_elms[key].click();
+                break;
+            }
+        }
+
     // Desseleciona o objeto
     } else if (
         controle.ferramenta == "select"
