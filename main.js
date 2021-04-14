@@ -1433,8 +1433,19 @@ function click_handler(e, refs, controle) {
         && controle.polygon_tmp != undefined
         && e.ctrlKey
     ) {
-        controle.polygon_tmp = undefined;
+        // Deleta polígonos com 2 pontos
+        if (controle.polygon_tmp.vertices.length/2 < 3) {
+            controle.polygon_tmp.delete();
+        }
+
+        // Deleta linha temporária
+        if (controle.polygon_first_line != undefined) {
+            controle.polygon_first_line.delete();
+        }
+
         refs.msg.textContent = "";
+        controle.polygon_tmp = undefined;
+        controle.polygon_first_line = undefined;
     }
 
     // Seleciona o objeto hovered
