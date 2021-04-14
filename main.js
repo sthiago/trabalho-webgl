@@ -1619,6 +1619,18 @@ function init_keyboard(refs, controle) {
         // Finaliza polígono pressionando ESC
         if (event.key == "Escape") {
             finaliza_polygon(refs, controle);
+
+            // Cancela espelhamento
+            if (
+                controle.ferramenta == "mirror"
+                && controle.line_tmp != undefined
+            ) {
+                controle.ferramenta == "select";
+                controle.line_tmp.delete();
+                controle.line_tmp = undefined;
+                refs.btn_espelhar.click();
+                refs.btn_espelhar.blur();
+            }
         }
     });
 }
