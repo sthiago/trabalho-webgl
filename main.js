@@ -363,6 +363,9 @@ class Line extends Primitive {
 
         this.rotation = 0;
         this.escala = 1;
+        this.dx = 0;
+        this.dy = 0;
+
         this.constructor.list.push(this);
     }
 
@@ -386,7 +389,10 @@ class Line extends Primitive {
     }
 
     translate(dx, dy) {
-        this.set_position(this.x1 + dx, this.y1 + dy, this.x2 + dx, this.y2 + dy);
+        this.dx += dx;
+        this.dy += dy;
+
+        this.transform();
     }
 
     set_rotation(graus) {
@@ -397,7 +403,7 @@ class Line extends Primitive {
         this.escala = fator;
     }
 
-    // Aplica escala e rotação
+    // Aplica escala, rotação, e translação
     transform() {
         const xc = (this.x1_orig + this.x2_orig) / 2;
         const yc = (this.y1_orig + this.y2_orig) / 2;
@@ -416,6 +422,12 @@ class Line extends Primitive {
         this.y1 = yc + this.escala * (this.y1 - yc);
         this.x2 = xc + this.escala * (this.x2 - xc);
         this.y2 = yc + this.escala * (this.y2 - yc);
+
+        // Translação
+        this.x1 += this.dx;
+        this.y1 += this.dy;
+        this.x2 += this.dx;
+        this.y2 += this.dy;
     }
 
     // Espelha em relação a uma reta
@@ -462,6 +474,8 @@ class Line extends Primitive {
         // porque o espelhamento funciona como um tipo de translação
         this.rotation = 0;
         this.escala = 1;
+        this.dx = 0;
+        this.dy = 0;
     }
 }
 
