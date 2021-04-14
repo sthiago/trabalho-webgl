@@ -527,6 +527,9 @@ class Polygon extends Primitive {
 
         this.vertices = [];
 
+        this.rotation = 0;
+        this.escala = 1;
+
         this.constructor.list.push(this);
     }
 
@@ -622,6 +625,7 @@ class Polygon extends Primitive {
         const points = this.ordered_vertices.slice();
 
         this.triangles = [];
+        this.orig_triangles = [];
         if (points.length < 3) return;
 
         while (points.length > 3) {
@@ -645,6 +649,11 @@ class Polygon extends Primitive {
                 // Testa se p2 é convexo calculando os ângulos entre os vetores
                 if (this.is_p2_convex(this.xcm, this.ycm, p1, p2, p3)) {
                     this.triangles.push([p1, p2, p3]);
+                    this.orig_triangles.push([
+                        { x: p1.x, y: p1.y },
+                        { x: p2.x, y: p2.y },
+                        { x: p3.x, y: p3.y },
+                    ]);
                     points.splice(points.indexOf(p2), 1);
                     break outertrifor;
                 }
@@ -654,6 +663,11 @@ class Polygon extends Primitive {
         // Adiciona o último triângulo
         const [ p1, p2, p3 ] = [ points[0], points[1], points[2] ];
         this.triangles.push([p1, p2, p3]);
+        this.orig_triangles.push([
+            { x: p1.x, y: p1.y },
+            { x: p2.x, y: p2.y },
+            { x: p3.x, y: p3.y },
+        ]);
     }
 
     add_vertex(x, y) {
@@ -665,6 +679,7 @@ class Polygon extends Primitive {
     update_last_vertex(x, y) {
         this.vertices[this.vertices.length-2] = x;
         this.vertices[this.vertices.length-1] = y;
+
         this.sort_vertices();
         this.triangulate();
     }
@@ -698,6 +713,48 @@ class Polygon extends Primitive {
         // mente triangular de novo
         this.sort_vertices();
         this.triangulate();
+    }
+
+    set_rotation(graus) {
+        this.rotation = graus;
+    }
+
+    set_scale(fator) {
+        this.escala = fator;
+    }
+
+    // Aplica escala e rotação direto nos triângulos
+    transform() {
+        // Encontrar centro (xc, yc)
+        let xc = 0, yc = 0;
+        for (let i = 0; i < this.vertices.length-1; i+=2) {
+            xc += this.vertices[i];
+            yc += this.vertices[i+1];
+        }
+        xc /= this.vertices.length/2;
+        yc /= this.vertices.length/2;
+
+        // Rotação
+        const theta = this.rotation * Math.PI / 180;
+        const cos = Math.cos(theta);
+        const sin = Math.sin(theta);
+
+        for (let i = 0; i < this.triangles.length; i++) {
+            const t = this.triangles[i];
+            const t_orig = this.orig_triangles[i];
+            for (let j = 0; j < 3; j++) {
+                t[j].x = xc + (t_orig[j].x - xc) * cos - (t_orig[j].y - yc) * sin;
+                t[j].y = yc + (t_orig[j].x - xc) * sin + (t_orig[j].y - yc) * cos;
+            }
+        }
+
+        // Escala
+        // for (let i = 0; i < this.orig_vertices.length-1; i+=2) {
+        //     const [x, y] = [this.vertices[i+0], this.vertices[i+1]];
+
+        //     this.vertices[i+0] = xc + this.escala * (x - xc);
+        //     this.vertices[i+1] = yc + this.escala * (y - yc);
+        // }
     }
 }
 
