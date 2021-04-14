@@ -362,6 +362,7 @@ class Line extends Primitive {
         this.y2 = this.y2_orig = y2;
 
         this.rotation = 0;
+        this.escala = 1;
         this.constructor.list.push(this);
     }
 
@@ -388,23 +389,33 @@ class Line extends Primitive {
         this.set_position(this.x1 + dx, this.y1 + dy, this.x2 + dx, this.y2 + dy);
     }
 
-    rotate(graus) {
-        const theta = graus * Math.PI / 180;
+    set_rotation(graus) {
         this.rotation = graus;
+    }
 
+    set_scale(fator) {
+        this.escala = fator;
+    }
+
+    // aplica escala e rotação
+    transform() {
         const xc = (this.x1_orig + this.x2_orig) / 2;
         const yc = (this.y1_orig + this.y2_orig) / 2;
 
+        // Rotação
+        const theta = this.rotation * Math.PI / 180;
         const cos = Math.cos(theta).toFixed(3);
         const sin = Math.sin(theta).toFixed(3);
-
-        // P1
         this.x1 = xc + (this.x1_orig - xc) * cos - (this.y1_orig - yc) * sin;
         this.y1 = yc + (this.x1_orig - xc) * sin + (this.y1_orig - yc) * cos;
-
-        // P2
         this.x2 = xc + (this.x2_orig - xc) * cos - (this.y2_orig - yc) * sin;
         this.y2 = yc + (this.x2_orig - xc) * sin + (this.y2_orig - yc) * cos;
+
+        // Escala
+        this.x1 = xc + this.escala * (this.x1 - xc);
+        this.y1 = yc + this.escala * (this.y1 - yc);
+        this.x2 = xc + this.escala * (this.x2 - xc);
+        this.y2 = yc + this.escala * (this.y2 - yc);
     }
 }
 
@@ -1274,7 +1285,25 @@ function init_sliders(refs, controle) {
             && !(controle.selected_obj instanceof Point)
         ) {
             // Seta rotação
-            controle.selected_obj.rotate(angulo);
+            controle.selected_obj.set_rotation(angulo);
+            controle.selected_obj.transform();
+
+            // Atualiza hoverbox
+            const bbox = controle.selected_obj.boundingbox();
+            hoverbox_params = [ bbox.xc, bbox.yc, bbox.w + 20, bbox.h + 20 ];
+            controle.hoverbox.set_lines(...hoverbox_params);
+        }
+    }
+
+    refs.slider_esc.oninput = (e) => {
+        const fator = refs.slider_esc.value;
+        if (
+            controle.selected_obj != undefined
+            && !(controle.selected_obj instanceof Point)
+        ) {
+            // Seta a escala
+            controle.selected_obj.set_scale(fator);
+            controle.selected_obj.transform();
 
             // Atualiza hoverbox
             const bbox = controle.selected_obj.boundingbox();
