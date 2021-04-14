@@ -875,6 +875,11 @@ function init_cores(refs, controle) {
             if (polygon_first_line != undefined) {
                 polygon_first_line.set_color(...controle.cor);
             }
+
+            // Muda a cor de objeto selecionado
+            if (controle.selected_obj != undefined) {
+                controle.selected_obj.color = controle.cor;
+            }
         }
     }
 }
