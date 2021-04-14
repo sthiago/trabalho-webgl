@@ -248,6 +248,41 @@ class Point extends Primitive {
     translate(dx, dy) {
         this.set_position(this.x + dx, this.y + dy);
     }
+
+    mirror(rx1, ry1, rx2, ry2) {
+        let [x, y] = [this.x, this.y];
+
+        // Translada (-rx1, -ry1)
+        x -= rx1;
+        y -= ry1;
+
+        // Encontra ângulo entre a reta e o eixo Ox
+        const theta = Math.atan2(ry2-ry1, rx2-rx1);
+
+        // Rotaciona pontos de -theta
+        let cos = Math.cos(-theta);
+        let sin = Math.sin(-theta);
+
+        let tmp_x = x * cos - y * sin;
+        let tmp_y = x * sin + y * cos;
+
+        // Espelha em relação ao eixo Ox
+        tmp_y = -tmp_y;
+
+        // Rotaciona pontos de +theta
+        cos = Math.cos(theta);
+        sin = Math.sin(theta);
+
+        x = tmp_x * cos - tmp_y * sin;
+        y = tmp_x * sin + tmp_y * cos;
+
+        // Translada (+rx1, +ry1)
+        x += rx1;
+        y += ry1;
+
+        // Seta posição
+        this.set_position(x, y);
+    }
 }
 
 class Line extends Primitive {
