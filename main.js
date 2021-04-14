@@ -713,6 +713,7 @@ class Polygon extends Primitive {
         // mente triangular de novo
         this.sort_vertices();
         this.triangulate();
+        this.transform();
     }
 
     set_rotation(graus) {
