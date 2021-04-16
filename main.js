@@ -1060,6 +1060,7 @@ function init_webgl(refs) {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(1, 1, 1, 1);
     gl.lineWidth(3);
+    gl.enable(gl.DEPTH_TEST);
 
     // Inicializa classes primitivas
     Point.init(gl, program);
@@ -1213,7 +1214,7 @@ function ordena_anti_horario(points) {
 }
 
 /** Função que retorna todos os pontos de todas as primitivas */
-function get_all_points() {
+function get_all_points(controle) {
     const points = [];
 
     // Points
@@ -1222,8 +1223,33 @@ function get_all_points() {
     }
 
     // Lines
+    for (const l of Line.list) {
+        // Não incluir linhas do próprio fecho
+        if (
+            controle.fecho_convexo != undefined
+            && controle.fecho_convexo.includes(l)
+        ) {
+            continue;
+        }
+
+        // Não incluir linhas da hoverbox
+        if (
+            controle.hoverbox != undefined
+            && controle.hoverbox.lines.includes(l)
+        ) {
+            continue;
+        }
+
+        points.push({ x: l.x1, y: l.y1 });
+        points.push({ x: l.x2, y: l.y2 });
+    }
 
     // Polygons
+    for (const pol of Polygon.list) {
+        for (const p of pol.ordered_vertices) {
+            points.push({ x: p.x, y: p.y });
+        }
+    }
 
     return points;
 }
@@ -1389,7 +1415,7 @@ function merge_hull(points) {
 
 /** Função que desenha o fecho convexo */
 function draw_fecho_convexo(controle) {
-    const all_points = get_all_points();
+    const all_points = get_all_points(controle);
     const fecho = merge_hull(all_points);
 
     // Ordena pontos do fecho
