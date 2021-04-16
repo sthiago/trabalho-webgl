@@ -1014,6 +1014,7 @@ function get_elementos() {
         "poligono_count": document.querySelector("#poligono_count"),
         "msg": document.querySelector("#msg"),
         "debug_tri": document.querySelector("#debug_tri"),
+        "fecho_convexo": document.querySelector("#fecho_convexo"),
         "slider_rot": document.querySelector("#slider-rot"),
         "slider_esc": document.querySelector("#slider-esc"),
         "selected_controles": document.querySelector("#selected-controles"),
@@ -1384,6 +1385,32 @@ function merge_hull(points) {
     }
 
     return hull_points;
+}
+
+/** Função que desenha o fecho convexo */
+function draw_fecho_convexo(controle) {
+    const all_points = get_all_points();
+    const fecho = merge_hull(all_points);
+
+    // Ordena pontos do fecho
+    const fecho_ordenado = ordena_anti_horario(fecho);
+
+    // Deleta linhas antigas (isso não é nada eficiente)
+    if (controle.fecho_convexo != undefined) {
+        controle.fecho_convexo.forEach(e => e.delete());
+        controle.fecho_convexo.length = 0;
+    } else {
+        controle.fecho_convexo = [];
+    }
+
+    // Cria uma linha pra cada aresta
+    for (let i = 0; i < fecho_ordenado.length; i++) {
+        const p1 = fecho_ordenado[i];
+        const p2 = fecho_ordenado[(i+1)%fecho_ordenado.length];
+        const line = new Line(p1.x, p1.y, p2.x, p2.y);
+        line.set_color(140, 140, 140, 200);
+        controle.fecho_convexo.push(line);
+    }
 }
 
 /** Função que lida com o evento mousemove do mouse */
@@ -1902,6 +1929,7 @@ function main()
         "hovered_obj": undefined,
         "selected_obj": undefined,
         "arrastando": false,
+        "fecho_convexo": undefined,
     }
 
     // Inicializa e configura funcionalidades
@@ -1915,14 +1943,27 @@ function main()
     refs.selected_controles.hidden = true;
     refs.selected_controles2.hidden = true;
 
-    window.requestAnimationFrame(() => draw_scene(gl, program, refs));
+    window.requestAnimationFrame(() => draw_scene(gl, program, refs, controle));
 }
 
-function draw_scene(gl, program, refs) {
+function draw_scene(gl, program, refs, controle) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // Ativa/Desativa debud de triângulos
+    // Ativa/Desativa debug de triângulos
     Polygon.debug_tri = refs.debug_tri.checked;
+
+    // Desenha fecho convexo
+    if (refs.fecho_convexo.checked) {
+        draw_fecho_convexo(controle);
+    }
+
+    // Deleta fecho convexo
+    if (!refs.fecho_convexo.checked
+        && controle.fecho_convexo != undefined) {
+        controle.fecho_convexo.forEach(e => e.delete());
+        controle.fecho_convexo.length = 0;
+        controle.fecho_convexo = undefined;
+    }
 
     // Desenha todos os polígonos, linhas, e pontos
     Polygon.draw();
@@ -1933,7 +1974,7 @@ function draw_scene(gl, program, refs) {
     refs.linha_count.textContent = `Linhas: ${Line.list.length}`;
     refs.poligono_count.textContent = `Polígonos: ${Polygon.list.length}`;
 
-    window.requestAnimationFrame(() => draw_scene(gl, program, refs));
+    window.requestAnimationFrame(() => draw_scene(gl, program, refs, controle));
 }
 
 window.onload = main;
