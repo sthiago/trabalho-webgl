@@ -330,12 +330,15 @@ class Line extends Primitive {
         this.gl.drawArrays(this.gl.LINES, 0, 2 * this.list.length);
     }
 
-    static pick(xm, ym) {
+    static pick(xm, ym, ignore_list) {
         const tol = this.tol;
         const [ left, right, down, up ] = this.codificacao;
 
         forpickline: for (const l of this.list.slice().reverse()) {
             let [ x1, y1, x2, y2 ] = [ l.x1, l.y1, l.x2, l.y2 ];
+
+            // Pula linhas da ignore_list
+            if (ignore_list && ignore_list.includes(l)) continue;
 
             // y - y0 = m * (x - x0)
             const m = (y2 - y1) / (x2 - x1);
@@ -1462,7 +1465,7 @@ function mousemove_handler(e, refs, controle) {
         // selecionado. Se não houver, faz pick de ponto, linha, ou polígono nessa ordem
         const obj_sel = controle.selected_obj
             || Point.pick(mouseX, mouseY)
-            || Line.pick(mouseX, mouseY)
+            || Line.pick(mouseX, mouseY, controle.fecho_convexo)
             || Polygon.pick(mouseX, mouseY);
 
         // Se nada estiver selecionado ou em hover, não faz nada. Obs: se depois tiver
