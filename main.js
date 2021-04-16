@@ -1188,6 +1188,204 @@ function rubber_band(mouseX, mouseY, controle) {
     }
 }
 
+/** Retorna == 0 se três pontos colineares, > 0 se horário, e < 0 se anti-horário */
+function orientacao_3_pontos(p1, p2, p3) {
+    return (p2.y - p1.y) * (p3.x - p2.x) - (p2.x - p1.x) * (p3.y - p2.y);
+}
+
+/** Ordena pontos no sentido anti-horário em relação ao centro */
+function ordena_anti_horario(points) {
+    // Encontrar o centro (xc, yc)
+    let xc = 0, yc = 0;
+    for (const p of points) {
+        xc += p.x;
+        yc += p.y;
+    }
+    xc /= points.length;
+    yc /= points.length;
+    const centro = { x: xc, y: yc };
+
+    // Ordenar pontos em sentido anti-horário
+    points.sort((a, b) => (b.x - centro.x) * (a.y - centro.y) - (a.x - centro.x) * (b.y - centro.y));
+
+    return points;
+}
+
+/** Função que retorna todos os pontos de todas as primitivas */
+function get_all_points() {
+    const points = [];
+
+    // Points
+    for (const p of Point.list) {
+        points.push({ x: p.x, y: p.y });
+    }
+
+    // Lines
+
+    // Polygons
+
+    return points;
+}
+
+/** Função que encontra os 2 pontos da tangente inferior para o MergeHull */
+function get_tangente_inf(hull_esq, hull_dir) {
+    // Encontra o ponto mais à direita de hull_esq e mais à esquerda de hull_dir
+    let a = hull_esq[0];
+    for (const p of hull_esq) {
+        if (p.x > a.x) a = p;
+    }
+    let b = hull_dir[0];
+    for (const p of hull_dir) {
+        if (p.x < b.x) b = p;
+    }
+
+    // Encontra os índices de a e b
+    let a_idx = hull_esq.indexOf(a);
+    let b_idx = hull_dir.indexOf(b);
+
+    // Move a aresta até encontrar a tangente inferior
+    while (true) {
+        let troca = false;
+
+        a = hull_esq[a_idx];
+        b = hull_dir[b_idx];
+        let a_menos_1 = hull_esq[(hull_esq.length + (a_idx-1)%hull_esq.length)%hull_esq.length];
+        let b_mais_1 = hull_dir[(b_idx+1)%hull_dir.length];
+
+        if (orientacao_3_pontos(
+            { x: a.x, y: a.y },
+            { x: a_menos_1.x, y: a_menos_1.y },
+            { x: b.x, y: b.y },
+        ) < 0) {
+            a = a_menos_1;
+            a_idx = ((a_idx-1)%hull_esq.length + hull_esq.length)%hull_esq.length;
+            troca = true;
+        }
+
+        if (orientacao_3_pontos(
+            { x: a.x, y: a.y },
+            { x: b.x, y: b.y },
+            { x: b_mais_1.x, y: b_mais_1.y },
+        ) > 0) {
+            b = b_mais_1;
+            b_idx = (b_idx+1)%hull_dir.length;
+            troca = true;
+        }
+
+        if (!troca) break;
+    }
+
+    return [a, b];
+}
+
+/** Função que encontra os 2 pontos da tangente superior para o MergeHull */
+function get_tangente_sup(hull_esq, hull_dir) {
+    // Encontra o ponto mais à direita de hull_esq e mais à esquerda de hull_dir
+    let a = hull_esq[0];
+    for (const p of hull_esq) {
+        if (p.x > a.x) a = p;
+    }
+    let b = hull_dir[0];
+    for (const p of hull_dir) {
+        if (p.x < b.x) b = p;
+    }
+
+    // Encontra os índices de a e b
+    let a_idx = hull_esq.indexOf(a);
+    let b_idx = hull_dir.indexOf(b);
+
+    // Move a aresta até encontrar a tangente superior
+    while (true) {
+        let troca = false;
+
+        a = hull_esq[a_idx];
+        b = hull_dir[b_idx];
+        let a_mais_1 = hull_esq[(a_idx+1)%hull_esq.length];
+        let b_menos_1 = hull_dir[(hull_dir.length + (b_idx-1)%hull_dir.length)%hull_dir.length];
+
+        if (orientacao_3_pontos(
+            { x: a.x, y: a.y },
+            { x: a_mais_1.x, y: a_mais_1.y },
+            { x: b.x, y: b.y },
+        ) > 0) {
+            a = a_mais_1;
+            a_idx = (a_idx+1)%hull_esq.length;
+            troca = true;
+        }
+
+        if (orientacao_3_pontos(
+            { x: a.x, y: a.y },
+            { x: b.x, y: b.y },
+            { x: b_menos_1.x, y: b_menos_1.y },
+        ) < 0) {
+            b = b_menos_1;
+            b_idx = ((b_idx-1)%hull_dir.length + hull_dir.length) % hull_dir.length;
+            troca = true;
+        }
+
+        if (!troca) break;
+    }
+
+    return [a, b];
+}
+
+/** Função que retorna o fecho convexo na forma de uma lista de pontos ordenados */
+function merge_hull(points) {
+    // Caso base, se existem 3 ou menos pontos, todos fazem parte do fecho
+    if (points.length <= 3) {
+        return points;
+    }
+
+    // Divisão: separar os pontos em 2 grupos ordenados por x
+    const ordenados = points.slice().sort((a, b) => a.x - b.x);
+    const esquerda = ordenados.slice(0, Math.floor(ordenados.length/2));
+    const direita = ordenados.slice(Math.floor(ordenados.length/2));
+
+    // Chama merge_hull recursivamente em cada metade
+    const hull_esq = merge_hull(esquerda);
+    const hull_dir = merge_hull(direita);
+
+
+    // Combinar: encontra tangentes superior e inferior e remove os pontos entre elas
+
+    // Ordenar os conjuntos em sentido anti-horário
+    ordena_anti_horario(hull_esq);
+    ordena_anti_horario(hull_dir);
+
+    // Encontra tangentes inferior e superior
+    const tangente_inf = get_tangente_inf(hull_esq, hull_dir);
+    const tangente_sup = get_tangente_sup(hull_esq, hull_dir);
+
+    // Adiciona ao hull os pontos que não estão entre as tangentes no centro
+    const a_inf_idx = hull_esq.indexOf(tangente_inf[0]);
+    const a_sup_idx = hull_esq.indexOf(tangente_sup[0]);
+
+    const hull_points = [ hull_esq[a_sup_idx] ];
+    let i = a_inf_idx;
+    while (i != a_sup_idx) {
+        const len = hull_esq.length;
+        hull_points.push(hull_esq[i]);
+
+        i--;
+        i = ((i%len) + len)%len;
+    }
+
+    const b_inf_idx = hull_dir.indexOf(tangente_inf[1]);
+    const b_sup_idx = hull_dir.indexOf(tangente_sup[1]);
+
+    hull_points.push(hull_dir[b_sup_idx]);
+    i = b_inf_idx;
+    while (i != b_sup_idx) {
+        const len = hull_dir.length;
+        hull_points.push(hull_dir[i]);
+
+        i++;
+        i = i%len;
+    }
+
+    return hull_points;
+}
+
 /** Função que lida com o evento mousemove do mouse */
 function mousemove_handler(e, refs, controle) {
     const rect = refs.canvas.getBoundingClientRect();
