@@ -1216,6 +1216,34 @@ function ordena_anti_horario(points) {
     return points;
 }
 
+// Retorna coordenada polar do ponto em relação ao ponto (xcm, ycm)
+function polar(ponto, xcm, ycm) {
+    return Math.atan2(ponto.y - ycm, ponto.x - xcm);
+}
+
+// Retorna quadrado da distância do ponto a (xcm, ycm)
+function sqdist(ponto, xcm, ycm) {
+    return (ponto.x - xcm)**2 + (ponto.y - ycm)**2;
+}
+
+function ordena_anti_horario2(points) {
+    // Encontrar o centro (xc, yc)
+    let xc = 0, yc = 0;
+    for (const p of points) {
+        xc += p.x;
+        yc += p.y;
+    }
+    xc /= points.length;
+    yc /= points.length;
+
+    for (const p of points) {
+        p.polar = polar(p, xc, yc);
+        p.sqdist = sqdist (p, xc, yc);
+    }
+
+    points.sort((a, b) => a.polar - b.polar || a.sqdist - b.sqdist);
+    return points;
+}
 /** Função que retorna todos os pontos de todas as primitivas */
 function get_all_points(controle) {
     const points = [];
@@ -1422,7 +1450,7 @@ function draw_fecho_convexo(controle) {
     const fecho = merge_hull(all_points);
 
     // Ordena pontos do fecho
-    const fecho_ordenado = ordena_anti_horario(fecho);
+    const fecho_ordenado = ordena_anti_horario2(fecho);
 
     // Deleta linhas antigas (isso não é nada eficiente)
     if (controle.fecho_convexo != undefined) {
