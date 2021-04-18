@@ -1387,6 +1387,42 @@ function get_tangente_sup(hull_esq, hull_dir) {
     return [a, b];
 }
 
+function convex_hull_brutal(points) {
+    const hull_points = [];
+
+    for (const p1 of points) {
+        for (const p2 of points) {
+            if (p1.x == p2.x && p1.y == p2.y) continue;
+
+            const outros = points.filter(p => !(p.x == p1.x && p.y == p1.y) && !(p.x == p2.x && p.y == p2.y));
+            let todos_positivos = true;
+
+            for (const p of outros) {
+                const u = { x: p2.x - p1.x, y: p2.y - p1.y };
+                const v = { x: p.x - p1.x, y: p.y - p1.y };
+
+                const z = u.x * v.y - v.x * u.y;
+
+                if (z <= 0) {
+                    todos_positivos = false;
+                    break;
+                }
+            }
+
+            if (todos_positivos) {
+                if (hull_points.findIndex(p => p.x == p1.x && p.y == p1.y) == -1) {
+                    hull_points.push(p1);
+                }
+                if (hull_points.findIndex(p => p.x == p2.x && p.y == p2.y) == -1) {
+                    hull_points.push(p2);
+                }
+            }
+        }
+    }
+
+    return hull_points;
+}
+
 /** Função que retorna o fecho convexo na forma de uma lista de pontos ordenados */
 function merge_hull(points) {
     // Caso base, se existem 3 ou menos pontos, todos fazem parte do fecho
@@ -1447,7 +1483,10 @@ function merge_hull(points) {
 /** Função que desenha o fecho convexo */
 function draw_fecho_convexo(controle) {
     const all_points = get_all_points(controle);
-    const fecho = merge_hull(all_points);
+    // const all_points = [ {x: 114, y: 127}, {x: 261, y: 202}, {x: 174, y: 287}, {x: 161, y: 41}, {x: 232, y: 115}, {x: 86, y: 230}];
+    // all_points.sort((a, b) => Math.random() - 0.5);
+    // console.log(...all_points);
+    const fecho = convex_hull_brutal(all_points);
 
     // Ordena pontos do fecho
     const fecho_ordenado = ordena_anti_horario2(fecho);
