@@ -1322,21 +1322,13 @@ function get_tangente_inf(hull_esq, hull_dir) {
         let a_menos_1 = hull_esq[(hull_esq.length + (a_idx-1)%hull_esq.length)%hull_esq.length];
         let b_mais_1 = hull_dir[(b_idx+1)%hull_dir.length];
 
-        if (orientacao_3_pontos(
-            { x: a.x, y: a.y },
-            { x: a_menos_1.x, y: a_menos_1.y },
-            { x: b.x, y: b.y },
-        ) < 0) {
+        if (orientacao_3_pontos(a, a_menos_1, b) < 0) {
             a = a_menos_1;
             a_idx = ((a_idx-1)%hull_esq.length + hull_esq.length)%hull_esq.length;
             troca = true;
         }
 
-        if (orientacao_3_pontos(
-            { x: a.x, y: a.y },
-            { x: b.x, y: b.y },
-            { x: b_mais_1.x, y: b_mais_1.y },
-        ) > 0) {
+        if (orientacao_3_pontos(a, b, b_mais_1) > 0) {
             b = b_mais_1;
             b_idx = (b_idx+1)%hull_dir.length;
             troca = true;
@@ -1373,21 +1365,13 @@ function get_tangente_sup(hull_esq, hull_dir) {
         let a_mais_1 = hull_esq[(a_idx+1)%hull_esq.length];
         let b_menos_1 = hull_dir[(hull_dir.length + (b_idx-1)%hull_dir.length)%hull_dir.length];
 
-        if (orientacao_3_pontos(
-            { x: a.x, y: a.y },
-            { x: a_mais_1.x, y: a_mais_1.y },
-            { x: b.x, y: b.y },
-        ) > 0) {
+        if (orientacao_3_pontos(a, a_mais_1, b) > 0) {
             a = a_mais_1;
             a_idx = (a_idx+1)%hull_esq.length;
             troca = true;
         }
 
-        if (orientacao_3_pontos(
-            { x: a.x, y: a.y },
-            { x: b.x, y: b.y },
-            { x: b_menos_1.x, y: b_menos_1.y },
-        ) < 0) {
+        if (orientacao_3_pontos(a, b, b_menos_1) < 0) {
             b = b_menos_1;
             b_idx = ((b_idx-1)%hull_dir.length + hull_dir.length) % hull_dir.length;
             troca = true;
