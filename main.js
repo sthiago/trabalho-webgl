@@ -1244,6 +1244,7 @@ function ordena_anti_horario2(points) {
     points.sort((a, b) => a.polar - b.polar || a.sqdist - b.sqdist);
     return points;
 }
+
 /** Função que retorna todos os pontos de todas as primitivas */
 function get_all_points(controle) {
     const points = [];
@@ -1282,7 +1283,18 @@ function get_all_points(controle) {
         }
     }
 
-    return points;
+    const points_ret = [];
+    for (const p of points) {
+        if (points_ret.findIndex(q => q.x == p.x && q.y == p.y) == -1) {
+            points_ret.push({ x: p.x, y: p.y });
+        }
+    }
+    points_ret.forEach(p => {
+        p.x += Math.random()/100;
+        p.y += Math.random()/100;
+    });
+
+    return points_ret;
 }
 
 /** Função que encontra os 2 pontos da tangente inferior para o MergeHull */
@@ -1426,8 +1438,9 @@ function convex_hull_brutal(points) {
 /** Função que retorna o fecho convexo na forma de uma lista de pontos ordenados */
 function merge_hull(points) {
     // Caso base, se existem 3 ou menos pontos, todos fazem parte do fecho
-    if (points.length <= 3) {
+    if (points.length < 3) {
         return points;
+        // return convex_hull_brutal(points);
     }
 
     // Divisão: separar os pontos em 2 grupos ordenados por x
