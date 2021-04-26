@@ -1198,24 +1198,6 @@ function orientacao_3_pontos(p1, p2, p3) {
     return (p2.y - p1.y) * (p3.x - p2.x) - (p2.x - p1.x) * (p3.y - p2.y);
 }
 
-/** Ordena pontos no sentido anti-horário em relação ao centro */
-function ordena_anti_horario(points) {
-    // Encontrar o centro (xc, yc)
-    let xc = 0, yc = 0;
-    for (const p of points) {
-        xc += p.x;
-        yc += p.y;
-    }
-    xc /= points.length;
-    yc /= points.length;
-    const centro = { x: xc, y: yc };
-
-    // Ordenar pontos em sentido anti-horário
-    points.sort((a, b) => (b.x - centro.x) * (a.y - centro.y) - (a.x - centro.x) * (b.y - centro.y));
-
-    return points;
-}
-
 // Retorna coordenada polar do ponto em relação ao ponto (xcm, ycm)
 function polar(ponto, xcm, ycm) {
     return Math.atan2(ponto.y - ycm, ponto.x - xcm);
@@ -1226,6 +1208,7 @@ function sqdist(ponto, xcm, ycm) {
     return (ponto.x - xcm)**2 + (ponto.y - ycm)**2;
 }
 
+/** Ordena pontos no sentido anti-horário em relação ao centro */
 function ordena_anti_horario2(points) {
     // Encontrar o centro (xc, yc)
     let xc = 0, yc = 0;
