@@ -1625,6 +1625,10 @@ function mouseup_handler(e, refs, controle) {
 
         // Desmarca objeto como selecionado
         controle.selected_obj = undefined;
+
+        // Desabilita transformações
+        refs.selected_controles.hidden = true;
+        refs.selected_controles2.hidden = true;
     }
 }
 
