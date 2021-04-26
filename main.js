@@ -803,35 +803,35 @@ class Polygon extends Primitive {
 
     }
 
+    // Calcula centro usando vértices "originais"
     update_center() {
         let xc = 0, yc = 0;
-        for (const t of this.ordered_vertices) {
-            xc += t.x;
-            yc += t.y;
+
+        for (const t of this.orig_triangles) {
+            xc += t[0].x + t[1].x + t[2].x;
+            yc += t[0].y + t[1].y + t[2].y;
         }
-        xc /= this.ordered_vertices.length;
-        yc /= this.ordered_vertices.length;
+
+        xc /= 3 * this.orig_triangles.length;
+        yc /= 3 * this.orig_triangles.length;
 
         this.xc = xc;
         this.yc = yc;
     }
 
+    // Translada apenas vértices "originais"
     translate(dx, dy) {
         const transladados = [];
         for (let i = 0; i < this.triangles.length; i++) {
-            const t = this.triangles[i];
             const t_orig = this.orig_triangles[i];
             for (let j = 0; j < 3; j++) {
                 // Pula vértices já transladados porque a referência deles é igual
-                if (transladados.includes(t[j])) continue;
-
-                t[j].x += dx;
-                t[j].y += dy;
+                if (transladados.includes(t_orig[j])) continue;
 
                 t_orig[j].x += dx;
                 t_orig[j].y += dy;
 
-                transladados.push(t[j]);
+                transladados.push(t_orig[j]);
             }
         }
 
