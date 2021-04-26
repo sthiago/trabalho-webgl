@@ -1423,8 +1423,8 @@ function merge_hull(points) {
     // Combinar: encontra tangentes superior e inferior e remove os pontos entre elas
 
     // Ordenar os conjuntos em sentido anti-horário
-    ordena_anti_horario(hull_esq);
-    ordena_anti_horario(hull_dir);
+    ordena_anti_horario2(hull_esq);
+    ordena_anti_horario2(hull_dir);
 
     // Encontra tangentes inferior e superior
     const tangente_inf = get_tangente_inf(hull_esq, hull_dir);
